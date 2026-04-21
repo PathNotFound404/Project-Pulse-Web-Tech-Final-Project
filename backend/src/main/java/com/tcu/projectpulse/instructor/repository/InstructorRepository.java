@@ -1,0 +1,10 @@
+package com.tcu.projectpulse.instructor.repository;
+
+import com.tcu.projectpulse.instructor.domain.Instructor;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface InstructorRepository extends JpaRepository<Instructor, Long>, JpaSpecificationExecutor<Instructor> {
+}
