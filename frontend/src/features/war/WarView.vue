@@ -149,9 +149,7 @@ async function submitForm() {
 }
 
 function requestDelete(activityId) {
-  console.log('[DEBUG] requestDelete called, activityId:', activityId)
   confirmDeleteId.value = activityId
-  console.log('[DEBUG] confirmDeleteId.value is now:', confirmDeleteId.value)
 }
 
 function cancelDelete() {
@@ -160,11 +158,9 @@ function cancelDelete() {
 
 async function confirmDelete() {
   const activityId = confirmDeleteId.value
-  console.log('[DEBUG] confirmDelete called, warId:', war.value?.id, 'activityId:', activityId)
   confirmDeleteId.value = null
   try {
     const result = await deleteActivity(war.value.id, activityId)
-    console.log('[DEBUG] deleteActivity result:', result)
     if (result.flag) {
       successMessage.value = 'Activity deleted.'
       await loadWar()

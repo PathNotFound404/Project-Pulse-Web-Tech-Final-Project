@@ -53,7 +53,6 @@ public class WarController {
     Result deleteActivity(@PathVariable Long warId,
                           @PathVariable Long activityId,
                           HttpSession session) {
-        System.out.println("[DEBUG] DELETE /api/wars/" + warId + "/activities/" + activityId + " called");
         Long studentId = requireAuth(session);
         warService.deleteActivity(warId, activityId, studentId);
         return Result.success("Activity deleted successfully", null);
