@@ -3,7 +3,6 @@ package com.tcu.projectpulse.config;
 import com.tcu.projectpulse.instructor.domain.Instructor;
 import com.tcu.projectpulse.instructor.domain.InstructorStatus;
 import com.tcu.projectpulse.instructor.repository.InstructorRepository;
-import com.tcu.projectpulse.peerevaluation.domain.PeerEvaluation;
 import com.tcu.projectpulse.section.domain.Section;
 import com.tcu.projectpulse.section.repository.SectionRepository;
 import com.tcu.projectpulse.student.domain.Student;
@@ -17,6 +16,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -65,9 +65,8 @@ public class DataInitializer implements ApplicationRunner {
         Student grace   = studentRepository.save(student("Grace",   "Green",   "g.green@tcu.edu",   section2324));
         Student henry   = studentRepository.save(student("Henry",   "Harris",  "h.harris@tcu.edu",  section2324));
 
-        // Add WARs and PeerEvaluations to Alice so UC-16 shows data
+        // Add WARs to Alice so UC-16 shows data
         addWars(alice, 3);
-        addPeerEvaluations(alice, 2);
         studentRepository.save(alice);
 
         // --- Teams (2024-2025) ---
@@ -137,18 +136,11 @@ public class DataInitializer implements ApplicationRunner {
         for (int i = 0; i < count; i++) {
             War w = new War();
             w.setStudent(student);
+            w.setWeekStart(LocalDate.of(2025, 1, 6).plusWeeks(i));
+            w.setWeekEnd(LocalDate.of(2025, 1, 12).plusWeeks(i));
             wars.add(w);
         }
         student.setWars(wars);
     }
 
-    private void addPeerEvaluations(Student student, int count) {
-        List<PeerEvaluation> evals = new ArrayList<>();
-        for (int i = 0; i < count; i++) {
-            PeerEvaluation pe = new PeerEvaluation();
-            pe.setStudent(student);
-            evals.add(pe);
-        }
-        student.setPeerEvaluations(evals);
-    }
 }
