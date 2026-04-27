@@ -138,23 +138,52 @@ public class StudentService {
         return toDetailDto(student);
     }
 
-    // UC-26: Student edits an account
-    public StudentDetailDto update(Long id, UpdateStudentRequest request) {
+    // UC-26: Student logs in
+    public Long login(String email, String password) {
+        if (email == null || email.isBlank())
+            throw new IllegalArgumentException("Email is required");
+        if (password == null || password.isBlank())
+            throw new IllegalArgumentException("Password is required");
+
+        Student student = studentRepository.findByEmail(email.trim())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
+        if (!passwordEncoder.matches(password, student.getPasswordHash()))
+            throw new IllegalArgumentException("Invalid email or password");
+
+        return student.getId();
+    }
+
+    // UC-26: Get logged-in student's profile
+    @Transactional(readOnly = true)
+    public UserProfileDto getProfile(Long studentId) {
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() -> new ObjectNotFoundException("Student", studentId));
+        return new UserProfileDto(student.getFirstName(), student.getLastName(), student.getEmail());
+    }
+
+    // UC-26: Student edits her account
+    public UserProfileDto update(Long id, UpdateStudentRequest request) {
+        if (request.firstName() == null || request.firstName().isBlank())
+            throw new IllegalArgumentException("First name is required");
+        if (request.lastName() == null || request.lastName().isBlank())
+            throw new IllegalArgumentException("Last name is required");
+        if (request.email() == null || request.email().isBlank())
+            throw new IllegalArgumentException("Email is required");
+        if (!request.email().matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$"))
+            throw new IllegalArgumentException("Invalid email format");
+
         Student student = studentRepository.findById(id)
                 .orElseThrow(() -> new ObjectNotFoundException("Student", id));
 
-        if (request.firstName() != null && !request.firstName().isBlank())
-            student.setFirstName(request.firstName().trim());
-        if (request.lastName() != null && !request.lastName().isBlank())
-            student.setLastName(request.lastName().trim());
-        if (request.email() != null && !request.email().isBlank()) {
-            if (!request.email().equals(student.getEmail()) && studentRepository.existsByEmail(request.email())) {
-                throw new IllegalStateException("Email " + request.email() + " is already in use");
-            }
-            student.setEmail(request.email().trim());
+        if (!request.email().equalsIgnoreCase(student.getEmail()) && studentRepository.existsByEmail(request.email().trim())) {
+            throw new AccountAlreadyExistsException("Email " + request.email() + " is already in use");
         }
 
-        return toDetailDto(student);
+        student.setFirstName(request.firstName().trim());
+        student.setLastName(request.lastName().trim());
+        student.setEmail(request.email().trim());
+
+        return new UserProfileDto(student.getFirstName(), student.getLastName(), student.getEmail());
     }
 
     private StudentSummaryDto toSummaryDto(Student student) {
