@@ -1,0 +1,5 @@
+package com.tcu.projectpulse.student.dto;
+
+import java.util.List;
+
+public record InviteRequest(List<String> emails) {}

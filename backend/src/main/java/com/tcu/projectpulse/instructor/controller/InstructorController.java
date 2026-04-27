@@ -5,11 +5,11 @@ import com.tcu.projectpulse.instructor.domain.InstructorStatus;
 import com.tcu.projectpulse.instructor.dto.*;
 import com.tcu.projectpulse.instructor.service.InstructorService;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/instructors")
+@CrossOrigin(origins = "http://localhost:5173")
 public class InstructorController {
 
     private final InstructorService instructorService;
@@ -20,50 +20,48 @@ public class InstructorController {
 
     // UC-21: Find instructors
     @GetMapping
-    Result findInstructors(
+    public Result findInstructors(
             @RequestParam(required = false) String firstName,
             @RequestParam(required = false) String lastName,
             @RequestParam(required = false) String teamName,
-            @RequestParam(required = false) InstructorStatus status) {
-
+            @RequestParam(required = false) String status) {
         InstructorSearchCriteria criteria = new InstructorSearchCriteria();
         criteria.setFirstName(firstName);
         criteria.setLastName(lastName);
         criteria.setTeamName(teamName);
-        criteria.setStatus(status);
-
+        if (status != null) {
+            criteria.setStatus(InstructorStatus.valueOf(status.toUpperCase()));
+        }
         List<InstructorSummaryDto> instructors = instructorService.findInstructors(criteria);
-        return Result.success(instructors);
+        return Result.success("Success", instructors);
     }
 
     // UC-22: View an instructor
     @GetMapping("/{id}")
-    Result getInstructor(@PathVariable Long id) {
+    public Result getInstructor(@PathVariable Long id) {
         InstructorDetailDto instructor = instructorService.findById(id);
-        return Result.success(instructor);
+        return Result.success("Success", instructor);
     }
 
-    // UC-18: Invite instructors to register an account
+    
+    // UC-18: Invite instructors
     @PostMapping("/invite")
-    Result inviteInstructors(@RequestBody InviteRequest request) {
-        if (request.emails() == null || request.emails().isEmpty()) {
-            throw new IllegalArgumentException("At least one email is required");
-        }
+    public Result inviteInstructors(@RequestBody InviteRequest request) {
         List<InviteLinkDto> links = instructorService.generateInviteLinks(request.emails());
-        return Result.success("Invitation links generated. Share these links with the instructors.", links);
+        return Result.success("Invitations generated", links);
     }
 
-    // UC-23: Deactivate an instructor
+    // UC-23: Deactivate instructor
     @PutMapping("/{id}/deactivate")
-    Result deactivateInstructor(@PathVariable Long id) {
+    public Result deactivate(@PathVariable Long id) {
         InstructorDetailDto instructor = instructorService.deactivate(id);
-        return Result.success("Instructor deactivated successfully", instructor);
+        return Result.success("Instructor deactivated", instructor);
     }
 
-    // UC-24: Reactivate an instructor
+    // UC-24: Reactivate instructor
     @PutMapping("/{id}/reactivate")
-    Result reactivateInstructor(@PathVariable Long id) {
+    public Result reactivate(@PathVariable Long id) {
         InstructorDetailDto instructor = instructorService.reactivate(id);
-        return Result.success("Instructor reactivated successfully", instructor);
+        return Result.success("Instructor reactivated", instructor);
     }
 }

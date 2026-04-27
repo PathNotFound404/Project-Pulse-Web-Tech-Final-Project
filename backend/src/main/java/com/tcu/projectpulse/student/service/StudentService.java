@@ -88,9 +88,8 @@ public class StudentService {
         student.getTeams().remove(team);
     }
 
-    // UC-18 equivalent: generate student invite links
-    public List<StudentInviteLinkDto> generateInviteLinks(List<String> emails) {
-        List<StudentInviteLinkDto> links = new ArrayList<>();
+    public List<InviteLinkDto> generateInviteLinks(List<String> emails) {
+        List<InviteLinkDto> links = new ArrayList<>();
         for (String email : emails) {
             String trimmed = email.trim();
             if (trimmed.isBlank()) continue;
@@ -99,7 +98,7 @@ public class StudentService {
             tokenRepository.save(new StudentInvitationToken(token, trimmed));
 
             String link = "http://localhost:" + serverPort + "/api/students/register?token=" + token;
-            links.add(new StudentInviteLinkDto(trimmed, link));
+            links.add(new InviteLinkDto(trimmed, link));
         }
         return links;
     }
