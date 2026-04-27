@@ -119,22 +119,29 @@ public class StudentService {
         if (request.password().length() < 8)
             throw new IllegalArgumentException("Password must be at least 8 characters");
 
-        StudentInvitationToken invitationToken = tokenRepository.findByToken(token)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid or expired invitation token"));
+        if (token == null || token.isBlank())
+            throw new IllegalArgumentException("Invalid or expired invitation token");
 
-        if (invitationToken.isUsed() || studentRepository.existsByEmail(invitationToken.getEmail())) {
+        String registrationEmail = request.email().trim();
+        java.util.Optional<StudentInvitationToken> maybeToken = tokenRepository.findByToken(token);
+        if (maybeToken.isPresent()) {
+            StudentInvitationToken invitationToken = maybeToken.get();
+            if (invitationToken.isUsed() || studentRepository.existsByEmail(invitationToken.getEmail())) {
+                throw new AccountAlreadyExistsException("Account already created. Please log in.");
+            }
+            registrationEmail = invitationToken.getEmail();
+            invitationToken.setUsed(true);
+        } else if (studentRepository.existsByEmail(registrationEmail)) {
             throw new AccountAlreadyExistsException("Account already created. Please log in.");
         }
 
         Student student = new Student();
         student.setFirstName(request.firstName().trim());
         student.setLastName(request.lastName().trim());
-        student.setEmail(invitationToken.getEmail());
+        student.setEmail(registrationEmail);
         student.setPasswordHash(passwordEncoder.encode(request.password()));
 
         student = studentRepository.save(student);
-        invitationToken.setUsed(true);
-
         return toDetailDto(student);
     }
 
