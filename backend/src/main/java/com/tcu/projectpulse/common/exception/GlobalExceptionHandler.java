@@ -15,6 +15,12 @@ public class GlobalExceptionHandler {
         return Result.error(404, ex.getMessage());
     }
 
+    @ExceptionHandler(AccountAlreadyExistsException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    Result handleAccountAlreadyExistsException(AccountAlreadyExistsException ex) {
+        return Result.error(409, ex.getMessage());
+    }
+
     @ExceptionHandler(IllegalStateException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     Result handleIllegalStateException(IllegalStateException ex) {

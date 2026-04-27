@@ -26,6 +26,8 @@ public class Student {
     @Column(nullable = false, unique = true)
     private String email;
 
+    private String passwordHash;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "section_id")
     private Section section;
@@ -52,6 +54,9 @@ public class Student {
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
+
+    public String getPasswordHash() { return passwordHash; }
+    public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
 
     public Section getSection() { return section; }
     public void setSection(Section section) { this.section = section; }
