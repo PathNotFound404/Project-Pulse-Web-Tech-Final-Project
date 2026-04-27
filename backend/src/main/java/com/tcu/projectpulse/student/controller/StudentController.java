@@ -57,4 +57,12 @@ public class StudentController {
         studentService.removeFromTeam(teamId, studentId);
         return Result.success("Removed from team", null);
     }
+    // UC-11: Invite students to join a senior design section
+    // Generates a unique registration link for each email provided
+    // Does NOT send emails - returns the links to the admin to distribute
+    @PostMapping("/invite")
+    public Result inviteStudents(@RequestBody InviteRequest request) {
+        List<InviteLinkDto> links = studentService.generateInviteLinks(request.emails());
+        return Result.success("Invitations generated", links);
+    }
 }
