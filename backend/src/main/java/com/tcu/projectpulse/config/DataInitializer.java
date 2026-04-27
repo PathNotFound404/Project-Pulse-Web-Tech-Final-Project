@@ -66,8 +66,9 @@ public class DataInitializer implements ApplicationRunner {
         Student henry   = studentRepository.save(student("Henry",   "Harris",  "h.harris@tcu.edu",  section2324));
 
         // Add WARs and PeerEvaluations to Alice so UC-16 shows data
+        // Bob is the evaluator of Alice's peer evaluations
         addWars(alice, 3);
-        addPeerEvaluations(alice, 2);
+        addPeerEvaluations(alice, bob, 2);
         studentRepository.save(alice);
 
         // --- Teams (2024-2025) ---
@@ -137,16 +138,33 @@ public class DataInitializer implements ApplicationRunner {
         for (int i = 0; i < count; i++) {
             War w = new War();
             w.setStudent(student);
+            w.setActiveWeek("2025-Week-" + (i + 1));
+            w.setActivityCategory("Development");
+            w.setPlannedActivity("Write unit tests");
+            w.setDescription("Sample WAR entry " + (i + 1));
+            w.setPlannedHours(5.0);
+            w.setActualHours(4.5);
+            w.setStatus("COMPLETED");
             wars.add(w);
         }
         student.setWars(wars);
     }
 
-    private void addPeerEvaluations(Student student, int count) {
+    private void addPeerEvaluations(Student student, Student evaluator, int count) {
         List<PeerEvaluation> evals = new ArrayList<>();
         for (int i = 0; i < count; i++) {
             PeerEvaluation pe = new PeerEvaluation();
             pe.setStudent(student);
+            pe.setEvaluator(evaluator);
+            pe.setActiveWeek("2025-Week-" + (i + 1));
+            pe.setCourtesy(4);
+            pe.setEngagementInMeetings(4);
+            pe.setInitiative(3);
+            pe.setOpenMindedness(5);
+            pe.setProductivity(4);
+            pe.setQualityOfWork(4);
+            pe.setPublicComments("Great team member.");
+            pe.setPrivateComments("Could improve communication.");
             evals.add(pe);
         }
         student.setPeerEvaluations(evals);
