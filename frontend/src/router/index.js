@@ -3,10 +3,20 @@ import InstructorRegister from '../features/instructor/InstructorRegister.vue'
 import PeerEvalSectionReport from '../features/instructor/PeerEvalSectionReport.vue'
 import WarTeamReport from '../features/instructor/WarTeamReport.vue'
 import StudentReports from '../features/instructor/StudentReports.vue'
+import LoginView from '../features/auth/LoginView.vue'
+import RegisterView from '../features/auth/RegisterView.vue'
+import AccountView from '../features/account/AccountView.vue'
+import WarView from '../features/war/WarView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    // Cody's routes
+    { path: '/login', component: LoginView },
+    { path: '/register', component: RegisterView },
+    { path: '/account', component: AccountView },
+    { path: '/war', component: WarView },
+
     // UC-30: Instructor registration via invite link
     {
       path: '/instructor/register',

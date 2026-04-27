@@ -9,10 +9,22 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(UnauthorizedException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    Result handleUnauthorizedException(UnauthorizedException ex) {
+        return Result.error(401, ex.getMessage());
+    }
+
     @ExceptionHandler(ObjectNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     Result handleObjectNotFoundException(ObjectNotFoundException ex) {
         return Result.error(404, ex.getMessage());
+    }
+
+    @ExceptionHandler(AccountAlreadyExistsException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    Result handleAccountAlreadyExistsException(AccountAlreadyExistsException ex) {
+        return Result.error(409, ex.getMessage());
     }
 
     @ExceptionHandler(IllegalStateException.class)

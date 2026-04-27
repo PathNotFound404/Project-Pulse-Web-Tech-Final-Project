@@ -3,6 +3,11 @@ package com.tcu.projectpulse.war.domain;
 import com.tcu.projectpulse.student.domain.Student;
 import jakarta.persistence.*;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "wars")
 public class War {
