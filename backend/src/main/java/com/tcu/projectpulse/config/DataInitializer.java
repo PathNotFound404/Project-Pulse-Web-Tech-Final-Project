@@ -17,6 +17,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -137,6 +138,8 @@ public class DataInitializer implements ApplicationRunner {
         for (int i = 0; i < count; i++) {
             War w = new War();
             w.setStudent(student);
+            w.setWeekStart(LocalDate.of(2025, 1, 6).plusWeeks(i));
+            w.setWeekEnd(LocalDate.of(2025, 1, 12).plusWeeks(i));
             wars.add(w);
         }
         student.setWars(wars);
