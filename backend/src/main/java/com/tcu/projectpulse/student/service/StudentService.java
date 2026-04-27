@@ -11,6 +11,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.UUID;
+import com.tcu.projectpulse.student.domain.StudentInvitationToken;
+import com.tcu.projectpulse.student.dto.InviteLinkDto;
+import com.tcu.projectpulse.student.dto.InviteRequest;
+import com.tcu.projectpulse.student.repository.StudentInvitationTokenRepository;
+import org.springframework.beans.factory.annotation.Value;
 
 @Service
 @Transactional
@@ -18,10 +25,16 @@ public class StudentService {
 
     private final StudentRepository studentRepository;
     private final TeamRepository teamRepository;
+    private final StudentInvitationTokenRepository invitationTokenRepository;
 
-    public StudentService(StudentRepository studentRepository, TeamRepository teamRepository) {
+    @Value("${server.port:8080}")
+    private int serverPort;
+
+    public StudentService(StudentRepository studentRepository, TeamRepository teamRepository,
+                      StudentInvitationTokenRepository invitationTokenRepository) {
         this.studentRepository = studentRepository;
         this.teamRepository = teamRepository;
+        this.invitationTokenRepository = invitationTokenRepository;
     }
 
     @Transactional(readOnly = true)
@@ -90,5 +103,19 @@ public class StudentService {
                 student.getWars().size(),
                 student.getPeerEvaluations().size()
         );
+    }
+
+    public List<InviteLinkDto> generateInviteLinks(List<String> emails) {
+        List<InviteLinkDto> links = new ArrayList<>();
+        for (String email : emails) {
+            String trimmed = email.trim();
+            if (trimmed.isBlank()) continue;
+            String token = UUID.randomUUID().toString();
+            StudentInvitationToken invitationToken = new StudentInvitationToken(token, trimmed);
+            invitationTokenRepository.save(invitationToken);
+            String link = "http://localhost:" + serverPort + "/api/students/register?token=" + token;
+            links.add(new InviteLinkDto(trimmed, link));
+        }
+        return links;
     }
 }
