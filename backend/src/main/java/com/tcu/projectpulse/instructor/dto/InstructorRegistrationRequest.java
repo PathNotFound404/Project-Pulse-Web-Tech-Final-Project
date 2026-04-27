@@ -1,22 +1,12 @@
 package com.tcu.projectpulse.instructor.dto;
 
-import jakarta.validation.constraints.NotBlank;
-
 // UC-30: Data needed to register an instructor account
 public class InstructorRegistrationRequest {
 
-    @NotBlank(message = "First name is required")
     private String firstName;
-
     private String middleInitial;
-
-    @NotBlank(message = "Last name is required")
     private String lastName;
-
-    @NotBlank(message = "Password is required")
     private String password;
-
-    @NotBlank(message = "Please re-enter your password")
     private String reenterPassword;
 
     public InstructorRegistrationRequest() {}

@@ -15,6 +15,30 @@ public class War {
     @JoinColumn(name = "student_id", nullable = false)
     private Student student;
 
+    // e.g. "02-12-2024 to 02-18-2024"
+    @Column(nullable = false)
+    private String activeWeek;
+
+    // DEVELOPMENT, TESTING, BUGFIX, COMMUNICATION, etc.
+    @Column(nullable = false)
+    private String activityCategory;
+
+    @Column(nullable = false)
+    private String plannedActivity;
+
+    @Column
+    private String description;
+
+    @Column
+    private Double plannedHours;
+
+    @Column
+    private Double actualHours;
+
+    // "In progress", "Under testing", "Done"
+    @Column
+    private String status;
+
     public War() {}
 
     public Long getId() { return id; }
@@ -22,4 +46,25 @@ public class War {
 
     public Student getStudent() { return student; }
     public void setStudent(Student student) { this.student = student; }
+
+    public String getActiveWeek() { return activeWeek; }
+    public void setActiveWeek(String activeWeek) { this.activeWeek = activeWeek; }
+
+    public String getActivityCategory() { return activityCategory; }
+    public void setActivityCategory(String activityCategory) { this.activityCategory = activityCategory; }
+
+    public String getPlannedActivity() { return plannedActivity; }
+    public void setPlannedActivity(String plannedActivity) { this.plannedActivity = plannedActivity; }
+
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+
+    public Double getPlannedHours() { return plannedHours; }
+    public void setPlannedHours(Double plannedHours) { this.plannedHours = plannedHours; }
+
+    public Double getActualHours() { return actualHours; }
+    public void setActualHours(Double actualHours) { this.actualHours = actualHours; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 }
