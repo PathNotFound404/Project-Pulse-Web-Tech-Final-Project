@@ -44,7 +44,9 @@ public class InstructorController {
     }
 
     
-    // UC-18: Invite instructors
+    // UC-18: Invite instructors to register an account
+    // Generates a unique registration link for each email provided
+    // Does NOT send emails - returns the links to the admin to distribute
     @PostMapping("/invite")
     public Result inviteInstructors(@RequestBody InviteRequest request) {
         List<InviteLinkDto> links = instructorService.generateInviteLinks(request.emails());
