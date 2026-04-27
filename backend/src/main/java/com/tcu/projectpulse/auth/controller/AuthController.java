@@ -1,6 +1,8 @@
 package com.tcu.projectpulse.auth.controller;
 
+import com.tcu.projectpulse.auth.dto.LoginResponse;
 import com.tcu.projectpulse.common.dto.Result;
+import com.tcu.projectpulse.common.exception.UnauthorizedException;
 import com.tcu.projectpulse.student.dto.LoginRequest;
 import com.tcu.projectpulse.student.dto.RegisterStudentRequest;
 import com.tcu.projectpulse.student.dto.UserProfileDto;
@@ -32,9 +34,13 @@ public class AuthController {
     // UC-26: Student logs in
     @PostMapping("/login")
     Result login(@RequestBody LoginRequest request, HttpSession session) {
-        Long studentId = studentService.login(request.email(), request.password());
-        session.setAttribute("studentId", studentId);
-        UserProfileDto profile = studentService.getProfile(studentId);
-        return Result.success(profile);
+        try {
+            Long studentId = studentService.login(request.email(), request.password());
+            session.setAttribute("studentId", studentId);
+            UserProfileDto profile = studentService.getProfile(studentId);
+            return Result.success(new LoginResponse(studentId, profile.firstName(), profile.lastName(), profile.email()));
+        } catch (IllegalArgumentException ex) {
+            throw new UnauthorizedException(ex.getMessage());
+        }
     }
 }
