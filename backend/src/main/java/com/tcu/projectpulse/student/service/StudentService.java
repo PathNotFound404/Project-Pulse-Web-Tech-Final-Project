@@ -28,8 +28,8 @@ public class StudentService {
     private final StudentInvitationTokenRepository tokenRepository;
     private final BCryptPasswordEncoder passwordEncoder;
 
-    @Value("${server.port:8080}")
-    private int serverPort;
+    @Value("${app.frontend-base-url}")
+    private String frontendBaseUrl;
 
     public StudentService(StudentRepository studentRepository,
                           TeamRepository teamRepository,
@@ -97,7 +97,7 @@ public class StudentService {
             String token = UUID.randomUUID().toString();
             tokenRepository.save(new StudentInvitationToken(token, trimmed));
 
-            String link = "http://localhost:" + serverPort + "/api/students/register?token=" + token;
+            String link = frontendBaseUrl + "/register?token=" + token;
             links.add(new InviteLinkDto(trimmed, link));
         }
         return links;
