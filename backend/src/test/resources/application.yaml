@@ -1,3 +1,6 @@
 spring:
   profiles:
     active: test
+
+app:
+  frontend-base-url: http://localhost:5173

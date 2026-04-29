@@ -3,34 +3,65 @@ package com.tcu.projectpulse.peerevaluation.domain;
 import com.tcu.projectpulse.student.domain.Student;
 import jakarta.persistence.*;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 @Entity
-@Table(name = "peer_evaluations")
+@Table(name = "peer_evaluations",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"student_id", "evaluatee_id", "week_start"}))
 public class PeerEvaluation {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // The student being evaluated
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_id", nullable = false)
     private Student student;
 
-    // The student who submitted this evaluation
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "evaluator_id", nullable = false)
-    private Student evaluator;
+    @JoinColumn(name = "evaluatee_id")
+    private Student evaluatee;
 
-    // e.g. "02-12-2024 to 02-18-2024"
-    @Column(nullable = false)
-    private String activeWeek;
+    @Column(name = "week_start")
+    private LocalDate weekStart;
 
-    // Individual rubric criterion scores (integers per UC-28)
+    @Column(name = "week_end")
+    private LocalDate weekEnd;
+
+    @Column
+    private LocalDateTime submittedAt;
+
     @Column
     private Integer qualityOfWork;
 
     @Column
     private Integer productivity;
+
+    @Column
+    private Integer proactiveness;
+
+    @Column
+    private Integer treatsOthersWithRespect;
+
+    @Column
+    private Integer handlesCriticism;
+
+    @Column
+    private Integer performanceInMeetings;
+
+    @Column(columnDefinition = "TEXT")
+    private String publicComment;
+
+    @Column(columnDefinition = "TEXT")
+    private String privateComment;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "evaluator_id")
+    private Student evaluator;
+
+    @Column(name = "active_week")
+    private String activeWeek;
 
     @Column
     private Integer initiative;
@@ -44,11 +75,9 @@ public class PeerEvaluation {
     @Column
     private Integer engagementInMeetings;
 
-    // Public comments — visible to the student being evaluated
     @Column(columnDefinition = "TEXT")
     private String publicComments;
 
-    // Private comments — visible to instructor only (UC-31, BR-5)
     @Column(columnDefinition = "TEXT")
     private String privateComments;
 
@@ -60,8 +89,20 @@ public class PeerEvaluation {
     public Student getStudent() { return student; }
     public void setStudent(Student student) { this.student = student; }
 
+    public Student getEvaluatee() { return evaluatee; }
+    public void setEvaluatee(Student evaluatee) { this.evaluatee = evaluatee; }
+
     public Student getEvaluator() { return evaluator; }
     public void setEvaluator(Student evaluator) { this.evaluator = evaluator; }
+
+    public LocalDate getWeekStart() { return weekStart; }
+    public void setWeekStart(LocalDate weekStart) { this.weekStart = weekStart; }
+
+    public LocalDate getWeekEnd() { return weekEnd; }
+    public void setWeekEnd(LocalDate weekEnd) { this.weekEnd = weekEnd; }
+
+    public LocalDateTime getSubmittedAt() { return submittedAt; }
+    public void setSubmittedAt(LocalDateTime submittedAt) { this.submittedAt = submittedAt; }
 
     public String getActiveWeek() { return activeWeek; }
     public void setActiveWeek(String activeWeek) { this.activeWeek = activeWeek; }
@@ -71,6 +112,24 @@ public class PeerEvaluation {
 
     public Integer getProductivity() { return productivity; }
     public void setProductivity(Integer productivity) { this.productivity = productivity; }
+
+    public Integer getProactiveness() { return proactiveness; }
+    public void setProactiveness(Integer proactiveness) { this.proactiveness = proactiveness; }
+
+    public Integer getTreatsOthersWithRespect() { return treatsOthersWithRespect; }
+    public void setTreatsOthersWithRespect(Integer treatsOthersWithRespect) { this.treatsOthersWithRespect = treatsOthersWithRespect; }
+
+    public Integer getHandlesCriticism() { return handlesCriticism; }
+    public void setHandlesCriticism(Integer handlesCriticism) { this.handlesCriticism = handlesCriticism; }
+
+    public Integer getPerformanceInMeetings() { return performanceInMeetings; }
+    public void setPerformanceInMeetings(Integer performanceInMeetings) { this.performanceInMeetings = performanceInMeetings; }
+
+    public String getPublicComment() { return publicComment; }
+    public void setPublicComment(String publicComment) { this.publicComment = publicComment; }
+
+    public String getPrivateComment() { return privateComment; }
+    public void setPrivateComment(String privateComment) { this.privateComment = privateComment; }
 
     public Integer getInitiative() { return initiative; }
     public void setInitiative(Integer initiative) { this.initiative = initiative; }
@@ -90,7 +149,6 @@ public class PeerEvaluation {
     public String getPrivateComments() { return privateComments; }
     public void setPrivateComments(String privateComments) { this.privateComments = privateComments; }
 
-    // Helper: compute total score for this evaluation (sum of all criteria)
     public int getTotalScore() {
         int total = 0;
         if (qualityOfWork != null) total += qualityOfWork;
@@ -102,8 +160,5 @@ public class PeerEvaluation {
         return total;
     }
 
-    // Max possible score = 6 criteria x 10 = 60
-    public int getMaxScore() {
-        return 60;
-    }
+    public int getMaxScore() { return 60; }
 }

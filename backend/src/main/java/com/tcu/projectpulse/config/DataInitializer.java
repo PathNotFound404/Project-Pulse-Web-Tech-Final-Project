@@ -14,6 +14,7 @@ import com.tcu.projectpulse.war.domain.Activity;
 import com.tcu.projectpulse.war.domain.ActivityCategory;
 import com.tcu.projectpulse.war.domain.ActivityStatus;
 import com.tcu.projectpulse.war.domain.War;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
@@ -21,12 +22,17 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
 @Component
 @Profile("!test")
 public class DataInitializer implements ApplicationRunner {
+
+    private static final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+    private static final String SEED_PASSWORD_HASH = encoder.encode("password123");
+    private static final DateTimeFormatter WEEK_FMT = DateTimeFormatter.ofPattern("MM-dd-yyyy");
 
     private final SectionRepository sectionRepository;
     private final TeamRepository teamRepository;
@@ -69,7 +75,7 @@ public class DataInitializer implements ApplicationRunner {
         Student grace = studentRepository.save(student("Grace", "Green",  "g.green@tcu.edu",  section2324));
         Student henry = studentRepository.save(student("Henry", "Harris", "h.harris@tcu.edu", section2324));
 
-        // Add WARs and PeerEvaluations to Alice so UC-16 / UC-32 / UC-34 show data
+        // Add WARs and PeerEvaluations to Alice so UC-16 / UC-32 / UC-33 / UC-34 show data
         addWars(alice, 3);
         addPeerEvaluations(alice, bob, 2);
         studentRepository.save(alice);
@@ -97,7 +103,7 @@ public class DataInitializer implements ApplicationRunner {
         teamGamma.setInstructors(new ArrayList<>(List.of(drSmith)));
         teamRepository.save(teamGamma);
 
-        // Team Delta — no students or instructors assigned yet (good for testing UC-19)
+        // Team Delta — no students or instructors assigned yet
         Team teamDelta = new Team();
         teamDelta.setName("Team Delta");
         teamDelta.setSection(section2425);
@@ -112,10 +118,6 @@ public class DataInitializer implements ApplicationRunner {
         System.out.println("Students  : Alice, Bob, Carol, David, Eve, Frank (2024-2025) | Grace, Henry (2023-2024)");
         System.out.println("=========================================");
     }
-
-    // -------------------------------------------------------
-    // Builders
-    // -------------------------------------------------------
 
     private Section section(String name) {
         return new Section(name);
@@ -137,16 +139,13 @@ public class DataInitializer implements ApplicationRunner {
         s.setLastName(lastName);
         s.setEmail(email);
         s.setSection(section);
+        s.setPasswordHash(SEED_PASSWORD_HASH);
         return s;
     }
 
-    /**
-     * Creates {@code count} WAR entries for the student.
-     * Each WAR spans one week (Monday–Sunday) and contains two sample Activities.
-     */
     private void addWars(Student student, int count) {
         List<War> wars = new ArrayList<>();
-        LocalDate monday = LocalDate.of(2025, 1, 6); // first Monday of 2025
+        LocalDate monday = LocalDate.of(2025, 1, 6);
 
         for (int i = 0; i < count; i++) {
             LocalDate weekStart = monday.plusWeeks(i);
@@ -185,7 +184,9 @@ public class DataInitializer implements ApplicationRunner {
             PeerEvaluation pe = new PeerEvaluation();
             pe.setStudent(student);
             pe.setEvaluator(evaluator);
-            LocalDate peWeekStart = LocalDate.of(2025, 1, 6).plusWeeks(i); LocalDate peWeekEnd = peWeekStart.plusDays(6); pe.setActiveWeek(peWeekStart.format(java.time.format.DateTimeFormatter.ofPattern("MM-dd-yyyy")) + " to " + peWeekEnd.format(java.time.format.DateTimeFormatter.ofPattern("MM-dd-yyyy")));
+            LocalDate peWeekStart = LocalDate.of(2025, 1, 6).plusWeeks(i);
+            LocalDate peWeekEnd = peWeekStart.plusDays(6);
+            pe.setActiveWeek(peWeekStart.format(WEEK_FMT) + " to " + peWeekEnd.format(WEEK_FMT));
             pe.setCourtesy(4);
             pe.setEngagementInMeetings(4);
             pe.setInitiative(3);
