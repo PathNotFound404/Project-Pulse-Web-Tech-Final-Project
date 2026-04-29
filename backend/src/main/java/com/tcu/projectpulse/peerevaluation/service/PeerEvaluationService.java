@@ -4,6 +4,7 @@ import com.tcu.projectpulse.common.exception.ObjectNotFoundException;
 import com.tcu.projectpulse.peerevaluation.domain.PeerEvaluation;
 import com.tcu.projectpulse.peerevaluation.dto.EvaluationEntryRequest;
 import com.tcu.projectpulse.peerevaluation.dto.EvaluationEntryResponse;
+import com.tcu.projectpulse.peerevaluation.dto.PeerEvaluationReportResponse;
 import com.tcu.projectpulse.peerevaluation.dto.PeerEvaluationSheetResponse;
 import com.tcu.projectpulse.peerevaluation.repository.PeerEvaluationRepository;
 import com.tcu.projectpulse.student.domain.Student;
@@ -99,6 +100,53 @@ public class PeerEvaluationService {
         }
 
         return getSheet(studentId, weekStart);
+    }
+
+    // UC-29: View own peer evaluation report for a given week
+    @Transactional(readOnly = true)
+    public PeerEvaluationReportResponse getMyReport(Long studentId, LocalDate anyDateInWeek) {
+        LocalDate weekStart = anyDateInWeek.with(DayOfWeek.MONDAY);
+        LocalDate weekEnd = weekStart.plusDays(6);
+
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() -> new ObjectNotFoundException("Student", studentId));
+
+        List<PeerEvaluation> received =
+                peerEvaluationRepository.findByEvaluateeIdAndWeekStart(studentId, weekStart);
+
+        if (received.isEmpty()) {
+            return new PeerEvaluationReportResponse(
+                    weekStart, weekEnd,
+                    student.getFirstName(), student.getLastName(),
+                    null, null, null, null, null, null,
+                    List.of(), null
+            );
+        }
+
+        double avgQoW  = received.stream().mapToInt(PeerEvaluation::getQualityOfWork).average().orElse(0);
+        double avgProd = received.stream().mapToInt(PeerEvaluation::getProductivity).average().orElse(0);
+        double avgProa = received.stream().mapToInt(PeerEvaluation::getProactiveness).average().orElse(0);
+        double avgResp = received.stream().mapToInt(PeerEvaluation::getTreatsOthersWithRespect).average().orElse(0);
+        double avgCrit = received.stream().mapToInt(PeerEvaluation::getHandlesCriticism).average().orElse(0);
+        double avgMeet = received.stream().mapToInt(PeerEvaluation::getPerformanceInMeetings).average().orElse(0);
+
+        List<String> publicComments = received.stream()
+                .map(PeerEvaluation::getPublicComment)
+                .filter(c -> c != null && !c.isBlank())
+                .toList();
+
+        double grade = received.stream()
+                .mapToInt(pe -> pe.getQualityOfWork() + pe.getProductivity() + pe.getProactiveness()
+                        + pe.getTreatsOthersWithRespect() + pe.getHandlesCriticism() + pe.getPerformanceInMeetings())
+                .average()
+                .orElse(0);
+
+        return new PeerEvaluationReportResponse(
+                weekStart, weekEnd,
+                student.getFirstName(), student.getLastName(),
+                avgQoW, avgProd, avgProa, avgResp, avgCrit, avgMeet,
+                publicComments, grade
+        );
     }
 
     private List<Student> getTeammates(Student student) {

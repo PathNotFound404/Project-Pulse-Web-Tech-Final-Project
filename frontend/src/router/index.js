@@ -3,6 +3,8 @@ import LoginView from '../features/auth/LoginView.vue'
 import RegisterView from '../features/auth/RegisterView.vue'
 import AccountView from '../features/account/AccountView.vue'
 import WarView from '../features/war/WarView.vue'
+import PeerEvaluationView from '../features/peerevaluation/PeerEvaluationView.vue'
+import PeerEvaluationReportView from '../features/peerevaluation/PeerEvaluationReportView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -11,6 +13,8 @@ const router = createRouter({
     { path: '/register', component: RegisterView },
     { path: '/account', component: AccountView },
     { path: '/war', component: WarView },
+    { path: '/peer-evaluation', component: PeerEvaluationView },
+    { path: '/peer-evaluation-report', component: PeerEvaluationReportView },
   ],
 })
 

@@ -10,6 +10,7 @@ import com.tcu.projectpulse.student.repository.StudentRepository;
 import com.tcu.projectpulse.team.domain.Team;
 import com.tcu.projectpulse.team.repository.TeamRepository;
 import com.tcu.projectpulse.war.domain.War;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
