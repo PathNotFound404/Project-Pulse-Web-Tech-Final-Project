@@ -1,39 +1,20 @@
-package com.tcu.projectpulse.instructor.domain;
+package com.tcu.projectpulse.instructor.dto;
 
-import com.tcu.projectpulse.team.domain.Team;
-import jakarta.persistence.*;
-
-import java.util.ArrayList;
+import com.tcu.projectpulse.instructor.domain.InstructorStatus;
 import java.util.List;
 
-@Entity
-@Table(name = "instructors")
-public class Instructor {
+// Used to return instructor details in API responses
+public class InstructorResponse {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(nullable = false)
     private String firstName;
-
-    @Column
     private String middleInitial;
-
-    @Column(nullable = false)
     private String lastName;
-
-    @Column(nullable = false, unique = true)
     private String email;
+    private InstructorStatus status;
+    private List<String> teamNames;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private InstructorStatus status = InstructorStatus.ACTIVE;
-
-    @ManyToMany(mappedBy = "instructors", fetch = FetchType.LAZY)
-    private List<Team> teams = new ArrayList<>();
-
-    public Instructor() {}
+    public InstructorResponse() {}
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -53,6 +34,6 @@ public class Instructor {
     public InstructorStatus getStatus() { return status; }
     public void setStatus(InstructorStatus status) { this.status = status; }
 
-    public List<Team> getTeams() { return teams; }
-    public void setTeams(List<Team> teams) { this.teams = teams; }
+    public List<String> getTeamNames() { return teamNames; }
+    public void setTeamNames(List<String> teamNames) { this.teamNames = teamNames; }
 }

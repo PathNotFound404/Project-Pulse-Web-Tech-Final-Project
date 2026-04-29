@@ -2,6 +2,7 @@ package com.tcu.projectpulse.instructor;
 
 import com.tcu.projectpulse.instructor.domain.Instructor;
 import com.tcu.projectpulse.instructor.domain.InstructorStatus;
+import com.tcu.projectpulse.instructor.domain.InvitationToken;
 import com.tcu.projectpulse.instructor.repository.InstructorRepository;
 import com.tcu.projectpulse.instructor.repository.InvitationTokenRepository;
 import org.junit.jupiter.api.AfterEach;
@@ -47,6 +48,10 @@ class InstructorControllerTest {
         invitationTokenRepository.deleteAll();
         instructorRepository.deleteAll();
     }
+
+    // -------------------------------------------------------
+    // CODY'S TESTS (UC-18, 21, 22, 23, 24)
+    // -------------------------------------------------------
 
     @Test
     void findInstructors_noParams_returnsAll() {
@@ -147,6 +152,91 @@ class InstructorControllerTest {
                 .toEntity(Map.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    // -------------------------------------------------------
+    // EDUARDA'S TESTS (UC-30, 31, 32, 33, 34)
+    // -------------------------------------------------------
+
+    // UC-30: Register via valid invite token
+    @Test
+    void registerInstructor_validToken_returns200() {
+        InvitationToken token = new InvitationToken("test-token-abc", "newteacher@tcu.edu");
+        invitationTokenRepository.save(token);
+
+        ResponseEntity<Map> response = http.post()
+                .uri("/api/instructors/register?token=test-token-abc")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("{\"firstName\":\"New\",\"lastName\":\"Teacher\",\"password\":\"pass123\",\"reenterPassword\":\"pass123\"}")
+                .retrieve().toEntity(Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat((Boolean) response.getBody().get("flag")).isTrue();
+        Map<?, ?> data = (Map<?, ?>) response.getBody().get("data");
+        assertThat(data.get("firstName")).isEqualTo("New");
+        assertThat(data.get("email")).isEqualTo("newteacher@tcu.edu");
+    }
+
+    @Test
+    void registerInstructor_invalidToken_returns404() {
+        ResponseEntity<Map> response = http.post()
+                .uri("/api/instructors/register?token=bad-token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("{\"firstName\":\"New\",\"lastName\":\"Teacher\",\"password\":\"pass123\",\"reenterPassword\":\"pass123\"}")
+                .retrieve()
+                .onStatus(s -> s.is4xxClientError(), (req, res) -> {})
+                .toEntity(Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat((Boolean) response.getBody().get("flag")).isFalse();
+    }
+
+    // UC-31: Peer eval report for section — empty since no data in test DB
+    @Test
+    void getPeerEvalReportForSection_noData_returnsEmptyList() {
+        ResponseEntity<Map> response = http.get()
+                .uri("/api/instructors/reports/peer-evaluation/section/1?activeWeek=02-12-2024 to 02-18-2024")
+                .retrieve().toEntity(Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat((Boolean) response.getBody().get("flag")).isTrue();
+        assertThat((List<?>) response.getBody().get("data")).isEmpty();
+    }
+
+    // UC-32: WAR report for team — fixed: activeWeek must be MM-dd-yyyy only
+    @Test
+    void getWarReportForTeam_noData_returnsEmptyList() {
+        ResponseEntity<Map> response = http.get()
+                .uri("/api/instructors/reports/war/team/1?activeWeek=02-12-2024")
+                .retrieve().toEntity(Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat((Boolean) response.getBody().get("flag")).isTrue();
+        assertThat((List<?>) response.getBody().get("data")).isEmpty();
+    }
+
+    // UC-33: Peer eval report for student — empty since no data in test DB
+    @Test
+    void getPeerEvalReportForStudent_noData_returnsEmptyList() {
+        ResponseEntity<Map> response = http.get()
+                .uri("/api/instructors/reports/peer-evaluation/student/1?startWeek=02-12-2024&endWeek=04-28-2024")
+                .retrieve().toEntity(Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat((Boolean) response.getBody().get("flag")).isTrue();
+        assertThat((List<?>) response.getBody().get("data")).isEmpty();
+    }
+
+    // UC-34: WAR report for student — empty since no data in test DB
+    @Test
+    void getWarReportForStudent_noData_returnsEmptyList() {
+        ResponseEntity<Map> response = http.get()
+                .uri("/api/instructors/reports/war/student/1?startWeek=02-12-2024&endWeek=04-28-2024")
+                .retrieve().toEntity(Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat((Boolean) response.getBody().get("flag")).isTrue();
+        assertThat((List<?>) response.getBody().get("data")).isEmpty();
     }
 
     private Instructor buildInstructor(String firstName, String lastName, String email, InstructorStatus status) {
