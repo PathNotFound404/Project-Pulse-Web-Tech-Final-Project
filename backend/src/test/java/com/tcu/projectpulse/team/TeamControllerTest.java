@@ -66,7 +66,7 @@ class TeamControllerTest {
         instructor.setLastName("Smith");
         instructor.setEmail("j.smith@tcu.edu");
         instructor.setStatus(InstructorStatus.ACTIVE);
-        instructor.setPasswordHash("test-hash");
+        instructor.setPassword("test-hash");
         instructor.setTeams(new ArrayList<>());
         instructor = instructorRepository.save(instructor);
 
@@ -113,7 +113,7 @@ class TeamControllerTest {
         newInstructor.setLastName("Jones");
         newInstructor.setEmail("b.jones@tcu.edu");
         newInstructor.setStatus(InstructorStatus.ACTIVE);
-        newInstructor.setPasswordHash("test-hash");
+        newInstructor.setPassword("test-hash");
         newInstructor.setTeams(new ArrayList<>());
         newInstructor = instructorRepository.save(newInstructor);
 
@@ -159,7 +159,7 @@ class TeamControllerTest {
         notOnTeam.setLastName("OnTeam");
         notOnTeam.setEmail("not.onteam@tcu.edu");
         notOnTeam.setStatus(InstructorStatus.ACTIVE);
-        notOnTeam.setPasswordHash("test-hash");
+        notOnTeam.setPassword("test-hash");
         notOnTeam.setTeams(new ArrayList<>());
         notOnTeam = instructorRepository.save(notOnTeam);
 

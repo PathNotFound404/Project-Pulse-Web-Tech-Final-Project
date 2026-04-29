@@ -13,6 +13,7 @@ import com.tcu.projectpulse.team.domain.Team;
 import com.tcu.projectpulse.student.domain.Student;
 import com.tcu.projectpulse.war.domain.Activity;
 import com.tcu.projectpulse.war.domain.War;
+import com.tcu.projectpulse.team.repository.TeamRepository;
 import com.tcu.projectpulse.war.repository.WarRepository;
 import org.springframework.beans.factory.annotation.Value;
 
@@ -35,6 +36,7 @@ public class InstructorService {
     private final InvitationTokenRepository invitationTokenRepository;
     private final PeerEvaluationRepository peerEvaluationRepository;
     private final WarRepository warRepository;
+    private final TeamRepository teamRepository;
 
     @Value("${app.frontend-base-url}")
     private String frontendBaseUrl;
@@ -44,11 +46,13 @@ public class InstructorService {
     public InstructorService(InstructorRepository instructorRepository,
                              InvitationTokenRepository invitationTokenRepository,
                              PeerEvaluationRepository peerEvaluationRepository,
-                             WarRepository warRepository) {
+                             WarRepository warRepository,
+                             TeamRepository teamRepository) {
         this.instructorRepository = instructorRepository;
         this.invitationTokenRepository = invitationTokenRepository;
         this.peerEvaluationRepository = peerEvaluationRepository;
         this.warRepository = warRepository;
+        this.teamRepository = teamRepository;
     }
 
     // -------------------------------------------------------
@@ -121,7 +125,7 @@ public class InstructorService {
 
         Instructor instructor = instructorRepository.findByEmail(email.trim())
                 .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
-        if (!passwordEncoder.matches(password, instructor.getPasswordHash()))
+        if (!passwordEncoder.matches(password, instructor.getPassword()))
             throw new IllegalArgumentException("Invalid email or password");
 
         return instructor.getId();
@@ -130,18 +134,6 @@ public class InstructorService {
     // -------------------------------------------------------
     // EDUARDA'S USE CASES (UC-30, 31, 32, 33, 34)
     // -------------------------------------------------------
-
-    // UC-30: Login for instructor
-    @Transactional(readOnly = true)
-    public Instructor login(String email, String password) {
-        Instructor instructor = instructorRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
-        if (!password.equals(instructor.getPassword()))
-            throw new IllegalArgumentException("Invalid email or password");
-        if (instructor.getStatus() == InstructorStatus.DEACTIVATED)
-            throw new IllegalArgumentException("This account has been deactivated");
-        return instructor;
-    }
 
     // UC-30: Instructor sets up account using invite link token
     public InstructorResponse registerInstructor(String token, InstructorRegistrationRequest request) {
@@ -163,9 +155,8 @@ public class InstructorService {
         instructor.setMiddleInitial(request.getMiddleInitial());
         instructor.setLastName(request.getLastName());
         instructor.setEmail(invitationToken.getEmail());
-        instructor.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        instructor.setPassword(passwordEncoder.encode(request.getPassword()));
         instructor.setStatus(InstructorStatus.ACTIVE);
-        instructor.setPassword(request.getPassword());
 
         Instructor saved = instructorRepository.save(instructor);
         invitationToken.setUsed(true);
