@@ -47,7 +47,7 @@
 </template>
 
 <script>
-import { getSectionPeerEvalReport } from './instructorService'
+import { getSectionPeerEvalReport } from './InstructorService'
 
 export default {
   name: 'PeerEvalSectionReport',

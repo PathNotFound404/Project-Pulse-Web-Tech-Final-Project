@@ -39,8 +39,6 @@ public class InstructorService {
     @Value("${app.frontend-base-url}")
     private String frontendBaseUrl;
 
-    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-
     public InstructorService(InstructorRepository instructorRepository,
                              InvitationTokenRepository invitationTokenRepository,
                              PeerEvaluationRepository peerEvaluationRepository,
@@ -82,7 +80,6 @@ public class InstructorService {
             String token = UUID.randomUUID().toString();
             InvitationToken invitationToken = new InvitationToken(token, trimmed);
             invitationTokenRepository.save(invitationToken);
-
             String link = frontendBaseUrl + "/instructor/register?token=" + token;
             links.add(new InviteLinkDto(trimmed, link));
         }
