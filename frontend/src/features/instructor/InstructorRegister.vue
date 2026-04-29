@@ -47,7 +47,7 @@
 </template>
 
 <script>
-import { registerInstructor } from './instructorService'
+import { registerInstructor } from './InstructorService'
 
 export default {
   name: 'InstructorRegister',
