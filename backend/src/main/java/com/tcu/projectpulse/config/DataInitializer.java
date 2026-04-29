@@ -3,7 +3,6 @@ package com.tcu.projectpulse.config;
 import com.tcu.projectpulse.instructor.domain.Instructor;
 import com.tcu.projectpulse.instructor.domain.InstructorStatus;
 import com.tcu.projectpulse.instructor.repository.InstructorRepository;
-import com.tcu.projectpulse.peerevaluation.domain.PeerEvaluation;
 import com.tcu.projectpulse.section.domain.Section;
 import com.tcu.projectpulse.section.repository.SectionRepository;
 import com.tcu.projectpulse.student.domain.Student;
@@ -24,6 +23,9 @@ import java.util.List;
 @Component
 @Profile("!test")
 public class DataInitializer implements ApplicationRunner {
+
+    private static final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+    private static final String SEED_PASSWORD_HASH = encoder.encode("password123");
 
     private final SectionRepository sectionRepository;
     private final TeamRepository teamRepository;
@@ -66,9 +68,8 @@ public class DataInitializer implements ApplicationRunner {
         Student grace   = studentRepository.save(student("Grace",   "Green",   "g.green@tcu.edu",   section2324));
         Student henry   = studentRepository.save(student("Henry",   "Harris",  "h.harris@tcu.edu",  section2324));
 
-        // Add WARs and PeerEvaluations to Alice so UC-16 shows data
+        // Add WARs to Alice so UC-16 shows data
         addWars(alice, 3);
-        addPeerEvaluations(alice, 2);
         studentRepository.save(alice);
 
         // --- Teams (2024-2025) ---
@@ -130,6 +131,7 @@ public class DataInitializer implements ApplicationRunner {
         s.setLastName(lastName);
         s.setEmail(email);
         s.setSection(section);
+        s.setPasswordHash(SEED_PASSWORD_HASH);
         return s;
     }
 
@@ -145,13 +147,4 @@ public class DataInitializer implements ApplicationRunner {
         student.setWars(wars);
     }
 
-    private void addPeerEvaluations(Student student, int count) {
-        List<PeerEvaluation> evals = new ArrayList<>();
-        for (int i = 0; i < count; i++) {
-            PeerEvaluation pe = new PeerEvaluation();
-            pe.setStudent(student);
-            evals.add(pe);
-        }
-        student.setPeerEvaluations(evals);
-    }
 }
