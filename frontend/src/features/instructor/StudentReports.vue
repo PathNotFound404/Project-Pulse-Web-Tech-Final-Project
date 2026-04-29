@@ -70,7 +70,7 @@
       </thead>
       <tbody>
         <tr v-for="(row, i) in rows" :key="i">
-          <td>{{ row.week || '-' }}</td>
+          <td>{{ row.weekStart && row.weekEnd ? row.weekStart + ' to ' + row.weekEnd : '-' }}</td>
           <td>{{ row.activityCategory }}</td>
           <td>{{ row.plannedActivity }}</td>
           <td>{{ row.description }}</td>
@@ -84,7 +84,7 @@
 </template>
 
 <script>
-import { getStudentPeerEvalReport, getStudentWarReport } from './InstructorService'
+import { getStudentPeerEvalReport, getStudentWarReport } from './instructorService'
 
 export default {
   name: 'StudentReports',

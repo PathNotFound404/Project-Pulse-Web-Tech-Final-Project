@@ -108,6 +108,18 @@ public class InstructorService {
     // EDUARDA'S USE CASES (UC-30, 31, 32, 33, 34)
     // -------------------------------------------------------
 
+    // UC-30: Login for instructor
+    @Transactional(readOnly = true)
+    public Instructor login(String email, String password) {
+        Instructor instructor = instructorRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
+        if (!password.equals(instructor.getPassword()))
+            throw new IllegalArgumentException("Invalid email or password");
+        if (instructor.getStatus() == InstructorStatus.DEACTIVATED)
+            throw new IllegalArgumentException("This account has been deactivated");
+        return instructor;
+    }
+
     // UC-30: Instructor sets up account using invite link token
     public InstructorResponse registerInstructor(String token, InstructorRegistrationRequest request) {
         InvitationToken invitationToken = invitationTokenRepository.findByToken(token)
@@ -121,10 +133,11 @@ public class InstructorService {
 
         Instructor instructor = new Instructor();
         instructor.setFirstName(request.getFirstName());
-        instructor.setMiddleInitial(request.getMiddleInitial()); // UC-30 fix: save middleInitial
+        instructor.setMiddleInitial(request.getMiddleInitial());
         instructor.setLastName(request.getLastName());
         instructor.setEmail(invitationToken.getEmail());
         instructor.setStatus(InstructorStatus.ACTIVE);
+        instructor.setPassword(request.getPassword());
 
         Instructor saved = instructorRepository.save(instructor);
         invitationToken.setUsed(true);
@@ -134,19 +147,15 @@ public class InstructorService {
     }
 
     // UC-31: Peer eval report for entire section for a given week.
-    // Includes students who DID NOT submit (submittedEval=false).
-    // Sorts by lastName ascending per spec.
     @Transactional(readOnly = true)
     public List<PeerEvalReportRow> generateSectionPeerEvalReport(Long sectionId, String activeWeek) {
         List<PeerEvaluation> evals = peerEvaluationRepository.findBySectionIdAndActiveWeek(sectionId, activeWeek);
 
-        // Group submitted evals by student
         Map<Long, List<PeerEvaluation>> byStudent = evals.stream()
                 .collect(Collectors.groupingBy(pe -> pe.getStudent().getId()));
 
         List<PeerEvalReportRow> rows = new ArrayList<>();
 
-        // Rows for students who submitted
         for (Map.Entry<Long, List<PeerEvaluation>> entry : byStudent.entrySet()) {
             List<PeerEvaluation> studentEvals = entry.getValue();
             PeerEvaluation first = studentEvals.get(0);
@@ -171,12 +180,8 @@ public class InstructorService {
             rows.add(row);
         }
 
-        // Rows for students who did NOT submit — find via section
-        // We use the students found in submitted evals' teams as approximation.
-        // If a student's ID is not in byStudent, they didn't submit.
         Set<Long> submittedIds = byStudent.keySet();
         if (!evals.isEmpty()) {
-            // Collect all students in the same teams as any submitter
             Set<Student> sectionStudents = evals.stream()
                     .flatMap(pe -> pe.getStudent().getTeams().stream())
                     .flatMap(team -> team.getStudents().stream())
@@ -199,14 +204,11 @@ public class InstructorService {
     }
 
     // UC-32: WAR report for a team for a given week.
-    // Includes students who DID NOT submit a WAR (submittedWar=false).
-    // Sorts by lastName ascending per spec.
     @Transactional(readOnly = true)
     public List<WarReportRow> generateTeamWarReport(Long teamId, String activeWeek) {
         LocalDate weekStart = LocalDate.parse(activeWeek, WEEK_FMT);
         List<War> wars = warRepository.findByTeamIdAndWeekStart(teamId, weekStart);
 
-        // Students who submitted
         Set<Long> submittedIds = wars.stream()
                 .map(w -> w.getStudent().getId())
                 .collect(Collectors.toSet());
@@ -234,7 +236,6 @@ public class InstructorService {
             }
         }
 
-        // Students who did NOT submit — look up all team members
         Team team = teamRepository.findById(teamId).orElse(null);
         if (team != null) {
             for (Student s : team.getStudents()) {

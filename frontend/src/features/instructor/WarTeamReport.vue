@@ -48,7 +48,7 @@
 </template>
 
 <script>
-import { getTeamWarReport } from './InstructorService'
+import { getTeamWarReport } from './instructorService'
 
 export default {
   name: 'WarTeamReport',
