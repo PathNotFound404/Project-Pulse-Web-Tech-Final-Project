@@ -10,7 +10,7 @@ env:
 
 jobs:
   deploy-backend:
-    name: Backend — build, push & deploy
+    name: Backend — build & push
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,15 +30,8 @@ jobs:
           docker push $IMAGE:${{ github.sha }}
           docker push $IMAGE:latest
 
-      - name: Deploy to Azure App Service
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: ${{ secrets.BACKEND_APP_NAME }}
-          publish-profile: ${{ secrets.BACKEND_PUBLISH_PROFILE }}
-          images: ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.BACKEND_IMAGE }}:${{ github.sha }}
-
   deploy-frontend:
-    name: Frontend — build, push & deploy
+    name: Frontend — build & push
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -60,10 +53,3 @@ jobs:
             -t $IMAGE:latest .
           docker push $IMAGE:${{ github.sha }}
           docker push $IMAGE:latest
-
-      - name: Deploy to Azure App Service
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: ${{ secrets.FRONTEND_APP_NAME }}
-          publish-profile: ${{ secrets.FRONTEND_PUBLISH_PROFILE }}
-          images: ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
