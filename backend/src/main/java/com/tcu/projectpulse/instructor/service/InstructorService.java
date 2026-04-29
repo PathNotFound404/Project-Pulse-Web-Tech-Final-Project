@@ -9,18 +9,19 @@ import com.tcu.projectpulse.instructor.repository.InstructorRepository;
 import com.tcu.projectpulse.instructor.repository.InvitationTokenRepository;
 import com.tcu.projectpulse.peerevaluation.domain.PeerEvaluation;
 import com.tcu.projectpulse.peerevaluation.repository.PeerEvaluationRepository;
-import com.tcu.projectpulse.student.domain.Student;
 import com.tcu.projectpulse.team.domain.Team;
-import com.tcu.projectpulse.team.repository.TeamRepository;
+import com.tcu.projectpulse.student.domain.Student;
 import com.tcu.projectpulse.war.domain.Activity;
 import com.tcu.projectpulse.war.domain.War;
 import com.tcu.projectpulse.war.repository.WarRepository;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -34,21 +35,20 @@ public class InstructorService {
     private final InvitationTokenRepository invitationTokenRepository;
     private final PeerEvaluationRepository peerEvaluationRepository;
     private final WarRepository warRepository;
-    private final TeamRepository teamRepository;
 
     @Value("${app.frontend-base-url}")
     private String frontendBaseUrl;
 
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
     public InstructorService(InstructorRepository instructorRepository,
                              InvitationTokenRepository invitationTokenRepository,
                              PeerEvaluationRepository peerEvaluationRepository,
-                             WarRepository warRepository,
-                             TeamRepository teamRepository) {
+                             WarRepository warRepository) {
         this.instructorRepository = instructorRepository;
         this.invitationTokenRepository = invitationTokenRepository;
         this.peerEvaluationRepository = peerEvaluationRepository;
         this.warRepository = warRepository;
-        this.teamRepository = teamRepository;
     }
 
     // -------------------------------------------------------
@@ -59,6 +59,7 @@ public class InstructorService {
     public List<InstructorSummaryDto> findInstructors(InstructorSearchCriteria criteria) {
         InstructorSpecification spec = new InstructorSpecification(criteria);
         List<Instructor> instructors = instructorRepository.findAll(spec);
+
         return instructors.stream()
                 .sorted(Comparator.comparing(Instructor::getLastName))
                 .map(this::toSummaryDto)
@@ -77,6 +78,7 @@ public class InstructorService {
         for (String email : emails) {
             String trimmed = email.trim();
             if (trimmed.isBlank()) continue;
+
             String token = UUID.randomUUID().toString();
             InvitationToken invitationToken = new InvitationToken(token, trimmed);
             invitationTokenRepository.save(invitationToken);
@@ -89,8 +91,11 @@ public class InstructorService {
     public InstructorDetailDto deactivate(Long id) {
         Instructor instructor = instructorRepository.findById(id)
                 .orElseThrow(() -> new ObjectNotFoundException("Instructor", id));
-        if (instructor.getStatus() == InstructorStatus.DEACTIVATED)
+
+        if (instructor.getStatus() == InstructorStatus.DEACTIVATED) {
             throw new IllegalStateException("Instructor " + id + " is already deactivated");
+        }
+
         instructor.setStatus(InstructorStatus.DEACTIVATED);
         return toDetailDto(instructor);
     }
@@ -98,10 +103,28 @@ public class InstructorService {
     public InstructorDetailDto reactivate(Long id) {
         Instructor instructor = instructorRepository.findById(id)
                 .orElseThrow(() -> new ObjectNotFoundException("Instructor", id));
-        if (instructor.getStatus() == InstructorStatus.ACTIVE)
+
+        if (instructor.getStatus() == InstructorStatus.ACTIVE) {
             throw new IllegalStateException("Instructor " + id + " is already active");
+        }
+
         instructor.setStatus(InstructorStatus.ACTIVE);
         return toDetailDto(instructor);
+    }
+
+    // UC-18/UC-30: Instructor logs in
+    public Long login(String email, String password) {
+        if (email == null || email.isBlank())
+            throw new IllegalArgumentException("Email is required");
+        if (password == null || password.isBlank())
+            throw new IllegalArgumentException("Password is required");
+
+        Instructor instructor = instructorRepository.findByEmail(email.trim())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
+        if (!passwordEncoder.matches(password, instructor.getPasswordHash()))
+            throw new IllegalArgumentException("Invalid email or password");
+
+        return instructor.getId();
     }
 
     // -------------------------------------------------------
@@ -113,17 +136,21 @@ public class InstructorService {
         InvitationToken invitationToken = invitationTokenRepository.findByToken(token)
                 .orElseThrow(() -> new ObjectNotFoundException("InvitationToken", token));
 
-        if (invitationToken.isUsed())
+        // UC-30 Extension 2a: Already registered
+        if (invitationToken.isUsed()) {
             throw new IllegalStateException("This invitation link has already been used. Please log in.");
+        }
 
-        if (!request.getPassword().equals(request.getReenterPassword()))
+        if (!request.getPassword().equals(request.getReenterPassword())) {
             throw new IllegalArgumentException("Passwords do not match");
+        }
 
         Instructor instructor = new Instructor();
         instructor.setFirstName(request.getFirstName());
-        instructor.setMiddleInitial(request.getMiddleInitial()); // UC-30 fix: save middleInitial
+        instructor.setMiddleInitial(request.getMiddleInitial());
         instructor.setLastName(request.getLastName());
         instructor.setEmail(invitationToken.getEmail());
+        instructor.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         instructor.setStatus(InstructorStatus.ACTIVE);
 
         Instructor saved = instructorRepository.save(instructor);
@@ -133,28 +160,22 @@ public class InstructorService {
         return toResponse(saved);
     }
 
-    // UC-31: Peer eval report for entire section for a given week.
-    // Includes students who DID NOT submit (submittedEval=false).
-    // Sorts by lastName ascending per spec.
+    // UC-31: Generate peer eval report for entire section for a given week
+    // Algorithm: for each student, average the total scores from all evaluators
     @Transactional(readOnly = true)
     public List<PeerEvalReportRow> generateSectionPeerEvalReport(Long sectionId, String activeWeek) {
         List<PeerEvaluation> evals = peerEvaluationRepository.findBySectionIdAndActiveWeek(sectionId, activeWeek);
 
-        // Group submitted evals by student
         Map<Long, List<PeerEvaluation>> byStudent = evals.stream()
                 .collect(Collectors.groupingBy(pe -> pe.getStudent().getId()));
 
         List<PeerEvalReportRow> rows = new ArrayList<>();
-
-        // Rows for students who submitted
         for (Map.Entry<Long, List<PeerEvaluation>> entry : byStudent.entrySet()) {
             List<PeerEvaluation> studentEvals = entry.getValue();
             PeerEvaluation first = studentEvals.get(0);
-            Student student = first.getStudent();
 
             PeerEvalReportRow row = new PeerEvalReportRow();
-            row.setStudentName(student.getFirstName() + " " + student.getLastName());
-            row.setLastName(student.getLastName());
+            row.setStudentName(first.getStudent().getFirstName() + " " + first.getStudent().getLastName());
 
             double avgGrade = studentEvals.stream()
                     .mapToInt(PeerEvaluation::getTotalScore)
@@ -171,53 +192,21 @@ public class InstructorService {
             rows.add(row);
         }
 
-        // Rows for students who did NOT submit — find via section
-        // We use the students found in submitted evals' teams as approximation.
-        // If a student's ID is not in byStudent, they didn't submit.
-        Set<Long> submittedIds = byStudent.keySet();
-        if (!evals.isEmpty()) {
-            // Collect all students in the same teams as any submitter
-            Set<Student> sectionStudents = evals.stream()
-                    .flatMap(pe -> pe.getStudent().getTeams().stream())
-                    .flatMap(team -> team.getStudents().stream())
-                    .collect(Collectors.toSet());
-
-            for (Student s : sectionStudents) {
-                if (!submittedIds.contains(s.getId())) {
-                    PeerEvalReportRow row = new PeerEvalReportRow();
-                    row.setStudentName(s.getFirstName() + " " + s.getLastName());
-                    row.setLastName(s.getLastName());
-                    row.setSubmittedEval(false);
-                    row.setPublicComments(new ArrayList<>());
-                    rows.add(row);
-                }
-            }
-        }
-
-        rows.sort(Comparator.comparing(PeerEvalReportRow::getLastName));
+        rows.sort(Comparator.comparing(PeerEvalReportRow::getStudentName));
         return rows;
     }
 
-    // UC-32: WAR report for a team for a given week.
-    // Includes students who DID NOT submit a WAR (submittedWar=false).
-    // Sorts by lastName ascending per spec.
+    // UC-32: Generate WAR report for a team for a given week
     @Transactional(readOnly = true)
     public List<WarReportRow> generateTeamWarReport(Long teamId, String activeWeek) {
         LocalDate weekStart = LocalDate.parse(activeWeek, WEEK_FMT);
         List<War> wars = warRepository.findByTeamIdAndWeekStart(teamId, weekStart);
 
-        // Students who submitted
-        Set<Long> submittedIds = wars.stream()
-                .map(w -> w.getStudent().getId())
-                .collect(Collectors.toSet());
-
         List<WarReportRow> rows = new ArrayList<>();
-
         for (War war : wars) {
             Student student = war.getStudent();
             String weekStartStr = war.getWeekStart().format(WEEK_FMT);
-            String weekEndStr   = war.getWeekEnd().format(WEEK_FMT);
-
+            String weekEndStr = war.getWeekEnd().format(WEEK_FMT);
             for (Activity activity : war.getActivities()) {
                 WarReportRow row = new WarReportRow();
                 row.setStudentName(student.getFirstName() + " " + student.getLastName());
@@ -234,26 +223,11 @@ public class InstructorService {
             }
         }
 
-        // Students who did NOT submit — look up all team members
-        Team team = teamRepository.findById(teamId).orElse(null);
-        if (team != null) {
-            for (Student s : team.getStudents()) {
-                if (!submittedIds.contains(s.getId())) {
-                    WarReportRow row = new WarReportRow();
-                    row.setStudentName(s.getFirstName() + " " + s.getLastName());
-                    row.setLastName(s.getLastName());
-                    row.setWeekStart(activeWeek);
-                    row.setSubmittedWar(false);
-                    rows.add(row);
-                }
-            }
-        }
-
-        rows.sort(Comparator.comparing(WarReportRow::getLastName));
+        rows.sort(Comparator.comparing(WarReportRow::getStudentName));
         return rows;
     }
 
-    // UC-33: Peer eval report for a student over a date range
+    // UC-33: Generate peer eval report for a student over a date range
     @Transactional(readOnly = true)
     public List<PeerEvalReportRow> generateStudentPeerEvalReport(Long studentId,
                                                                   String startWeek,
@@ -290,20 +264,19 @@ public class InstructorService {
         return rows;
     }
 
-    // UC-34: WAR report for a student over a date range
+    // UC-34: Generate WAR report for a student over a date range
     @Transactional(readOnly = true)
     public List<WarReportRow> generateStudentWarReport(Long studentId,
                                                         String startWeek,
                                                         String endWeek) {
         LocalDate startDate = LocalDate.parse(startWeek, WEEK_FMT);
-        LocalDate endDate   = LocalDate.parse(endWeek,   WEEK_FMT);
+        LocalDate endDate = LocalDate.parse(endWeek, WEEK_FMT);
         List<War> wars = warRepository.findByStudentIdAndWeekRange(studentId, startDate, endDate);
 
         List<WarReportRow> rows = new ArrayList<>();
         for (War war : wars) {
             String weekStartStr = war.getWeekStart().format(WEEK_FMT);
-            String weekEndStr   = war.getWeekEnd().format(WEEK_FMT);
-
+            String weekEndStr = war.getWeekEnd().format(WEEK_FMT);
             for (Activity activity : war.getActivities()) {
                 WarReportRow row = new WarReportRow();
                 row.setWeekStart(weekStartStr);
@@ -323,13 +296,18 @@ public class InstructorService {
     }
 
     // -------------------------------------------------------
-    // HELPERS
+    // HELPER METHODS
     // -------------------------------------------------------
 
     private InstructorSummaryDto toSummaryDto(Instructor instructor) {
         List<String> teamNames = instructor.getTeams().stream().map(Team::getName).toList();
-        return new InstructorSummaryDto(instructor.getId(), instructor.getFirstName(),
-                instructor.getLastName(), teamNames, instructor.getStatus());
+        return new InstructorSummaryDto(
+                instructor.getId(),
+                instructor.getFirstName(),
+                instructor.getLastName(),
+                teamNames,
+                instructor.getStatus()
+        );
     }
 
     private InstructorDetailDto toDetailDto(Instructor instructor) {
@@ -338,20 +316,30 @@ public class InstructorService {
                         team -> team.getSection() != null ? team.getSection().getName() : "No Section",
                         Collectors.mapping(Team::getName, Collectors.toList())
                 ));
-        return new InstructorDetailDto(instructor.getId(), instructor.getFirstName(),
-                instructor.getLastName(), instructor.getEmail(), instructor.getStatus(), bySection);
+        return new InstructorDetailDto(
+                instructor.getId(),
+                instructor.getFirstName(),
+                instructor.getLastName(),
+                instructor.getEmail(),
+                instructor.getStatus(),
+                bySection
+        );
     }
 
     private InstructorResponse toResponse(Instructor instructor) {
         InstructorResponse response = new InstructorResponse();
         response.setId(instructor.getId());
         response.setFirstName(instructor.getFirstName());
-        response.setMiddleInitial(instructor.getMiddleInitial());
         response.setLastName(instructor.getLastName());
         response.setEmail(instructor.getEmail());
         response.setStatus(instructor.getStatus());
-        if (instructor.getTeams() != null)
-            response.setTeamNames(instructor.getTeams().stream().map(Team::getName).toList());
+        if (instructor.getTeams() != null) {
+            response.setTeamNames(
+                instructor.getTeams().stream()
+                    .map(Team::getName)
+                    .toList()
+            );
+        }
         return response;
     }
 }
