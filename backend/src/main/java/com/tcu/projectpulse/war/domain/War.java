@@ -20,29 +20,22 @@ public class War {
     @JoinColumn(name = "student_id", nullable = false)
     private Student student;
 
-    // e.g. "02-12-2024 to 02-18-2024"
-    @Column(nullable = false)
-    private String activeWeek;
+    @Column(name = "week_start", nullable = false)
+    private LocalDate weekStart;
 
-    // DEVELOPMENT, TESTING, BUGFIX, COMMUNICATION, etc.
-    @Column(nullable = false)
-    private String activityCategory;
+    @Column(name = "week_end", nullable = false)
+    private LocalDate weekEnd;
 
-    @Column(nullable = false)
-    private String plannedActivity;
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 
-    @Column
-    private String description;
+    @OneToMany(mappedBy = "war", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    private List<Activity> activities = new ArrayList<>();
 
-    @Column
-    private Double plannedHours;
-
-    @Column
-    private Double actualHours;
-
-    // "In progress", "Under testing", "Done"
-    @Column
-    private String status;
+    @PrePersist
+    void prePersist() {
+        this.createdAt = LocalDateTime.now();
+    }
 
     public War() {}
 
@@ -52,24 +45,14 @@ public class War {
     public Student getStudent() { return student; }
     public void setStudent(Student student) { this.student = student; }
 
-    public String getActiveWeek() { return activeWeek; }
-    public void setActiveWeek(String activeWeek) { this.activeWeek = activeWeek; }
+    public LocalDate getWeekStart() { return weekStart; }
+    public void setWeekStart(LocalDate weekStart) { this.weekStart = weekStart; }
 
-    public String getActivityCategory() { return activityCategory; }
-    public void setActivityCategory(String activityCategory) { this.activityCategory = activityCategory; }
+    public LocalDate getWeekEnd() { return weekEnd; }
+    public void setWeekEnd(LocalDate weekEnd) { this.weekEnd = weekEnd; }
 
-    public String getPlannedActivity() { return plannedActivity; }
-    public void setPlannedActivity(String plannedActivity) { this.plannedActivity = plannedActivity; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
 
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
-
-    public Double getPlannedHours() { return plannedHours; }
-    public void setPlannedHours(Double plannedHours) { this.plannedHours = plannedHours; }
-
-    public Double getActualHours() { return actualHours; }
-    public void setActualHours(Double actualHours) { this.actualHours = actualHours; }
-
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public List<Activity> getActivities() { return activities; }
+    public void setActivities(List<Activity> activities) { this.activities = activities; }
 }

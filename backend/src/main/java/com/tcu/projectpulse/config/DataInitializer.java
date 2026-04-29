@@ -10,6 +10,9 @@ import com.tcu.projectpulse.student.domain.Student;
 import com.tcu.projectpulse.student.repository.StudentRepository;
 import com.tcu.projectpulse.team.domain.Team;
 import com.tcu.projectpulse.team.repository.TeamRepository;
+import com.tcu.projectpulse.war.domain.Activity;
+import com.tcu.projectpulse.war.domain.ActivityCategory;
+import com.tcu.projectpulse.war.domain.ActivityStatus;
 import com.tcu.projectpulse.war.domain.War;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -49,25 +52,24 @@ public class DataInitializer implements ApplicationRunner {
         Section section2324 = sectionRepository.save(section("2023-2024"));
 
         // --- Instructors ---
-        Instructor drSmith    = instructorRepository.save(instructor("Alice",  "Smith",    "a.smith@tcu.edu",    InstructorStatus.ACTIVE));
-        Instructor drJohnson  = instructorRepository.save(instructor("Robert", "Johnson",  "r.johnson@tcu.edu",  InstructorStatus.ACTIVE));
-        Instructor drLee      = instructorRepository.save(instructor("Linda",  "Lee",      "l.lee@tcu.edu",      InstructorStatus.ACTIVE));
-        Instructor drBrown    = instructorRepository.save(instructor("Mark",   "Brown",    "m.brown@tcu.edu",    InstructorStatus.DEACTIVATED));
+        Instructor drSmith   = instructorRepository.save(instructor("Alice",  "Smith",   "a.smith@tcu.edu",   InstructorStatus.ACTIVE));
+        Instructor drJohnson = instructorRepository.save(instructor("Robert", "Johnson", "r.johnson@tcu.edu", InstructorStatus.ACTIVE));
+        Instructor drLee     = instructorRepository.save(instructor("Linda",  "Lee",     "l.lee@tcu.edu",     InstructorStatus.ACTIVE));
+        Instructor drBrown   = instructorRepository.save(instructor("Mark",   "Brown",   "m.brown@tcu.edu",   InstructorStatus.DEACTIVATED));
 
         // --- Students (2024-2025) ---
-        Student alice   = studentRepository.save(student("Alice",   "Adams",   "a.adams@tcu.edu",   section2425));
-        Student bob     = studentRepository.save(student("Bob",     "Baker",   "b.baker@tcu.edu",   section2425));
-        Student carol   = studentRepository.save(student("Carol",   "Clark",   "c.clark@tcu.edu",   section2425));
-        Student david   = studentRepository.save(student("David",   "Davis",   "d.davis@tcu.edu",   section2425));
-        Student eve     = studentRepository.save(student("Eve",     "Evans",   "e.evans@tcu.edu",   section2425));
-        Student frank   = studentRepository.save(student("Frank",   "Foster",  "f.foster@tcu.edu",  section2425));
+        Student alice = studentRepository.save(student("Alice", "Adams", "a.adams@tcu.edu", section2425));
+        Student bob   = studentRepository.save(student("Bob",   "Baker", "b.baker@tcu.edu", section2425));
+        Student carol = studentRepository.save(student("Carol", "Clark", "c.clark@tcu.edu", section2425));
+        Student david = studentRepository.save(student("David", "Davis", "d.davis@tcu.edu", section2425));
+        Student eve   = studentRepository.save(student("Eve",   "Evans", "e.evans@tcu.edu", section2425));
+        Student frank = studentRepository.save(student("Frank", "Foster","f.foster@tcu.edu",section2425));
 
         // --- Students (2023-2024) ---
-        Student grace   = studentRepository.save(student("Grace",   "Green",   "g.green@tcu.edu",   section2324));
-        Student henry   = studentRepository.save(student("Henry",   "Harris",  "h.harris@tcu.edu",  section2324));
+        Student grace = studentRepository.save(student("Grace", "Green",  "g.green@tcu.edu",  section2324));
+        Student henry = studentRepository.save(student("Henry", "Harris", "h.harris@tcu.edu", section2324));
 
-        // Add WARs and PeerEvaluations to Alice so UC-16 shows data
-        // Bob is the evaluator of Alice's peer evaluations
+        // Add WARs and PeerEvaluations to Alice so UC-16 / UC-32 / UC-34 show data
         addWars(alice, 3);
         addPeerEvaluations(alice, bob, 2);
         studentRepository.save(alice);
@@ -111,6 +113,10 @@ public class DataInitializer implements ApplicationRunner {
         System.out.println("=========================================");
     }
 
+    // -------------------------------------------------------
+    // Builders
+    // -------------------------------------------------------
+
     private Section section(String name) {
         return new Section(name);
     }
@@ -134,19 +140,41 @@ public class DataInitializer implements ApplicationRunner {
         return s;
     }
 
+    /**
+     * Creates {@code count} WAR entries for the student.
+     * Each WAR spans one week (Monday–Sunday) and contains two sample Activities.
+     */
     private void addWars(Student student, int count) {
         List<War> wars = new ArrayList<>();
+        LocalDate monday = LocalDate.of(2025, 1, 6); // first Monday of 2025
+
         for (int i = 0; i < count; i++) {
-            War w = new War();
-            w.setStudent(student);
-            w.setActiveWeek("2025-Week-" + (i + 1));
-            w.setActivityCategory("Development");
-            w.setPlannedActivity("Write unit tests");
-            w.setDescription("Sample WAR entry " + (i + 1));
-            w.setPlannedHours(5.0);
-            w.setActualHours(4.5);
-            w.setStatus("COMPLETED");
-            wars.add(w);
+            LocalDate weekStart = monday.plusWeeks(i);
+            LocalDate weekEnd   = weekStart.plusDays(6);
+
+            War war = new War();
+            war.setStudent(student);
+            war.setWeekStart(weekStart);
+            war.setWeekEnd(weekEnd);
+
+            Activity dev = new Activity();
+            dev.setWar(war);
+            dev.setCategory(ActivityCategory.DEVELOPMENT);
+            dev.setDescription("Write unit tests for sprint " + (i + 1));
+            dev.setPlannedHours(5.0);
+            dev.setActualHours(4.5);
+            dev.setStatus(ActivityStatus.DONE);
+
+            Activity review = new Activity();
+            review.setWar(war);
+            review.setCategory(ActivityCategory.COMMUNICATION);
+            review.setDescription("Sprint " + (i + 1) + " review meeting");
+            review.setPlannedHours(1.0);
+            review.setActualHours(1.0);
+            review.setStatus(ActivityStatus.DONE);
+
+            war.setActivities(new ArrayList<>(List.of(dev, review)));
+            wars.add(war);
         }
         student.setWars(wars);
     }
@@ -157,7 +185,7 @@ public class DataInitializer implements ApplicationRunner {
             PeerEvaluation pe = new PeerEvaluation();
             pe.setStudent(student);
             pe.setEvaluator(evaluator);
-            pe.setActiveWeek("2025-Week-" + (i + 1));
+            LocalDate peWeekStart = LocalDate.of(2025, 1, 6).plusWeeks(i); LocalDate peWeekEnd = peWeekStart.plusDays(6); pe.setActiveWeek(peWeekStart.format(java.time.format.DateTimeFormatter.ofPattern("MM-dd-yyyy")) + " to " + peWeekEnd.format(java.time.format.DateTimeFormatter.ofPattern("MM-dd-yyyy")));
             pe.setCourtesy(4);
             pe.setEngagementInMeetings(4);
             pe.setInitiative(3);

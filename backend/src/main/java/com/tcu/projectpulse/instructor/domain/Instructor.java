@@ -17,6 +17,9 @@ public class Instructor {
     @Column(nullable = false)
     private String firstName;
 
+    @Column
+    private String middleInitial;
+
     @Column(nullable = false)
     private String lastName;
 
@@ -37,6 +40,9 @@ public class Instructor {
 
     public String getFirstName() { return firstName; }
     public void setFirstName(String firstName) { this.firstName = firstName; }
+
+    public String getMiddleInitial() { return middleInitial; }
+    public void setMiddleInitial(String middleInitial) { this.middleInitial = middleInitial; }
 
     public String getLastName() { return lastName; }
     public void setLastName(String lastName) { this.lastName = lastName; }

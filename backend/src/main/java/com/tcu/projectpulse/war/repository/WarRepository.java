@@ -6,25 +6,46 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface WarRepository extends JpaRepository<War, Long> {
 
-    // UC-32: Get all WAR entries for a given week
-    // Note: teamId filtering done in service layer since Student->team relationship unknown
-    @Query("SELECT w FROM War w WHERE w.activeWeek = :activeWeek")
-    List<War> findByTeamIdAndActiveWeek(@Param("teamId") Long teamId,
-                                        @Param("activeWeek") String activeWeek);
+    // UC-27 (Cody): get a student's WAR for a specific week start
+    Optional<War> findByStudentIdAndWeekStart(Long studentId, LocalDate weekStart);
 
-    // UC-34: Get all WAR entries for a student in a date range
-    @Query("SELECT w FROM War w WHERE w.student.id = :studentId AND w.activeWeek BETWEEN :startWeek AND :endWeek")
+    // UC-32: All WARs for a given team whose week_start matches the requested date.
+    // Team membership is resolved via Student -> teams join.
+    @Query("""
+           SELECT w FROM War w
+           JOIN w.student s
+           JOIN s.teams t
+           WHERE t.id = :teamId
+             AND w.weekStart = :weekStart
+           """)
+    List<War> findByTeamIdAndWeekStart(@Param("teamId") Long teamId,
+                                       @Param("weekStart") LocalDate weekStart);
+
+    // UC-34: All WARs for a student whose week_start falls within [start, end].
+    @Query("""
+           SELECT w FROM War w
+           WHERE w.student.id = :studentId
+             AND w.weekStart BETWEEN :startDate AND :endDate
+           """)
     List<War> findByStudentIdAndWeekRange(@Param("studentId") Long studentId,
-                                          @Param("startWeek") String startWeek,
-                                          @Param("endWeek") String endWeek);
+                                          @Param("startDate") LocalDate startDate,
+                                          @Param("endDate") LocalDate endDate);
 
-    // UC-32: Check which students submitted WAR for a week
-    @Query("SELECT w.student.id FROM War w WHERE w.activeWeek = :activeWeek")
+    // UC-32: IDs of students who already submitted a WAR for the given team/week.
+    @Query("""
+           SELECT w.student.id FROM War w
+           JOIN w.student s
+           JOIN s.teams t
+           WHERE t.id = :teamId
+             AND w.weekStart = :weekStart
+           """)
     List<Long> findStudentIdsWhoSubmittedWar(@Param("teamId") Long teamId,
-                                              @Param("activeWeek") String activeWeek);
+                                              @Param("weekStart") LocalDate weekStart);
 }

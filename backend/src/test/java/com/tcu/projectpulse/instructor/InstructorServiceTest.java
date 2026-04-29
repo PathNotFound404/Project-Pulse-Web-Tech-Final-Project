@@ -11,8 +11,12 @@ import com.tcu.projectpulse.instructor.service.InstructorService;
 import com.tcu.projectpulse.peerevaluation.domain.PeerEvaluation;
 import com.tcu.projectpulse.peerevaluation.repository.PeerEvaluationRepository;
 import com.tcu.projectpulse.student.domain.Student;
+import com.tcu.projectpulse.war.domain.Activity;
+import com.tcu.projectpulse.war.domain.ActivityCategory;
+import com.tcu.projectpulse.war.domain.ActivityStatus;
 import com.tcu.projectpulse.war.domain.War;
 import com.tcu.projectpulse.war.repository.WarRepository;
+import com.tcu.projectpulse.team.repository.TeamRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,28 +25,24 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class InstructorServiceTest {
 
-    @Mock
-    private InstructorRepository instructorRepository;
-
-    @Mock
-    private InvitationTokenRepository invitationTokenRepository;
-
-    @Mock
-    private PeerEvaluationRepository peerEvaluationRepository;
-
-    @Mock
-    private WarRepository warRepository;
+    @Mock private InstructorRepository instructorRepository;
+    @Mock private InvitationTokenRepository invitationTokenRepository;
+    @Mock private PeerEvaluationRepository peerEvaluationRepository;
+    @Mock private WarRepository warRepository;
+    @Mock private TeamRepository teamRepository;
 
     @InjectMocks
     private InstructorService instructorService;
@@ -52,6 +52,12 @@ class InstructorServiceTest {
     private InvitationToken validToken;
     private InvitationToken usedToken;
     private Student student;
+
+    // Shared date constants — "02-12-2024" is the week_start used across WAR tests
+    private static final LocalDate WEEK_START = LocalDate.of(2024, 2, 12);
+    private static final LocalDate WEEK_END   = LocalDate.of(2024, 2, 18);
+    private static final String    WEEK_START_STR = "02-12-2024";
+    private static final String    WEEK_END_STR   = "04-28-2024";
 
     @BeforeEach
     void setUp() {
@@ -80,6 +86,31 @@ class InstructorServiceTest {
         student.setId(1L);
         student.setFirstName("John");
         student.setLastName("Doe");
+    }
+
+    // -------------------------------------------------------
+    // Helper builders
+    // -------------------------------------------------------
+
+    /** Build a War with one Activity attached. */
+    private War buildWar(Student s, LocalDate start, LocalDate end,
+                         ActivityCategory cat, String desc,
+                         double planned, double actual, ActivityStatus status) {
+        War war = new War();
+        war.setStudent(s);
+        war.setWeekStart(start);
+        war.setWeekEnd(end);
+
+        Activity activity = new Activity();
+        activity.setWar(war);
+        activity.setCategory(cat);
+        activity.setDescription(desc);
+        activity.setPlannedHours(planned);
+        activity.setActualHours(actual);
+        activity.setStatus(status);
+
+        war.setActivities(new ArrayList<>(List.of(activity)));
+        return war;
     }
 
     // -------------------------------------------------------
@@ -287,37 +318,35 @@ class InstructorServiceTest {
         assertThat(rows).isEmpty();
     }
 
+    // UC-32 tests
     @Test
-    void generateTeamWarReport_hasData_returnsRows() {
-        War war = new War();
-        war.setStudent(student);
-        war.setActiveWeek("02-12-2024 to 02-18-2024");
-        war.setActivityCategory("DEVELOPMENT");
-        war.setPlannedActivity("Fix login bug");
-        war.setDescription("Fix the login bug");
-        war.setPlannedHours(4.0);
-        war.setActualHours(5.0);
-        war.setStatus("Done");
+    void generateTeamWarReport_hasData_returnsOneRowPerActivity() {
+        War war = buildWar(student,
+                WEEK_START, WEEK_END,
+                ActivityCategory.DEVELOPMENT, "Fix login bug",
+                4.0, 5.0, ActivityStatus.DONE);
 
-        given(warRepository.findByTeamIdAndActiveWeek(1L, "02-12-2024 to 02-18-2024"))
+        given(warRepository.findByTeamIdAndWeekStart(eq(1L), eq(WEEK_START)))
                 .willReturn(List.of(war));
 
-        List<WarReportRow> rows = instructorService
-                .generateTeamWarReport(1L, "02-12-2024 to 02-18-2024");
+        List<WarReportRow> rows = instructorService.generateTeamWarReport(1L, WEEK_START_STR);
 
         assertThat(rows).hasSize(1);
         assertThat(rows.get(0).getStudentName()).isEqualTo("John Doe");
         assertThat(rows.get(0).getActivityCategory()).isEqualTo("DEVELOPMENT");
-        assertThat(rows.get(0).getStatus()).isEqualTo("Done");
+        assertThat(rows.get(0).getDescription()).isEqualTo("Fix login bug");
+        assertThat(rows.get(0).getPlannedHours()).isEqualTo(4.0);
+        assertThat(rows.get(0).getActualHours()).isEqualTo(5.0);
+        assertThat(rows.get(0).getStatus()).isEqualTo("DONE");
+        assertThat(rows.get(0).isSubmittedWar()).isTrue();
     }
 
     @Test
     void generateTeamWarReport_noData_returnsEmptyList() {
-        given(warRepository.findByTeamIdAndActiveWeek(1L, "02-12-2024 to 02-18-2024"))
+        given(warRepository.findByTeamIdAndWeekStart(eq(1L), eq(WEEK_START)))
                 .willReturn(List.of());
 
-        List<WarReportRow> rows = instructorService
-                .generateTeamWarReport(1L, "02-12-2024 to 02-18-2024");
+        List<WarReportRow> rows = instructorService.generateTeamWarReport(1L, WEEK_START_STR);
 
         assertThat(rows).isEmpty();
     }
@@ -335,11 +364,11 @@ class InstructorServiceTest {
         pe.setEngagementInMeetings(9);
         pe.setPublicComments("Excellent!");
 
-        given(peerEvaluationRepository.findByStudentIdAndWeekRange(1L, "02-12-2024", "04-28-2024"))
+        given(peerEvaluationRepository.findByStudentIdAndWeekRange(1L, WEEK_START_STR, WEEK_END_STR))
                 .willReturn(List.of(pe));
 
         List<PeerEvalReportRow> rows = instructorService
-                .generateStudentPeerEvalReport(1L, "02-12-2024", "04-28-2024");
+                .generateStudentPeerEvalReport(1L, WEEK_START_STR, WEEK_END_STR);
 
         assertThat(rows).hasSize(1);
         assertThat(rows.get(0).getWeek()).isEqualTo("02-12-2024 to 02-18-2024");
@@ -348,44 +377,45 @@ class InstructorServiceTest {
 
     @Test
     void generateStudentPeerEvalReport_noData_returnsEmptyList() {
-        given(peerEvaluationRepository.findByStudentIdAndWeekRange(1L, "02-12-2024", "04-28-2024"))
+        given(peerEvaluationRepository.findByStudentIdAndWeekRange(1L, WEEK_START_STR, WEEK_END_STR))
                 .willReturn(List.of());
 
         List<PeerEvalReportRow> rows = instructorService
-                .generateStudentPeerEvalReport(1L, "02-12-2024", "04-28-2024");
+                .generateStudentPeerEvalReport(1L, WEEK_START_STR, WEEK_END_STR);
 
         assertThat(rows).isEmpty();
     }
 
+    // UC-34 tests
     @Test
-    void generateStudentWarReport_hasData_returnsRowsSortedByWeek() {
-        War war = new War();
-        war.setStudent(student);
-        war.setActiveWeek("02-12-2024 to 02-18-2024");
-        war.setActivityCategory("DEVELOPMENT");
-        war.setPlannedActivity("Activity 1");
-        war.setPlannedHours(4.0);
-        war.setActualHours(5.0);
-        war.setStatus("Done");
+    void generateStudentWarReport_hasData_returnsRowsSortedByWeekStart() {
+        War war = buildWar(student,
+                WEEK_START, WEEK_END,
+                ActivityCategory.DEVELOPMENT, "Activity 1",
+                4.0, 5.0, ActivityStatus.DONE);
 
-        given(warRepository.findByStudentIdAndWeekRange(1L, "02-12-2024", "04-28-2024"))
+        given(warRepository.findByStudentIdAndWeekRange(
+                eq(1L), eq(WEEK_START), eq(LocalDate.of(2024, 4, 28))))
                 .willReturn(List.of(war));
 
         List<WarReportRow> rows = instructorService
-                .generateStudentWarReport(1L, "02-12-2024", "04-28-2024");
+                .generateStudentWarReport(1L, WEEK_START_STR, WEEK_END_STR);
 
         assertThat(rows).hasSize(1);
-        assertThat(rows.get(0).getWeek()).isEqualTo("02-12-2024 to 02-18-2024");
+        assertThat(rows.get(0).getWeekStart()).isEqualTo("02-12-2024");
+        assertThat(rows.get(0).getWeekEnd()).isEqualTo("02-18-2024");
         assertThat(rows.get(0).getActivityCategory()).isEqualTo("DEVELOPMENT");
+        assertThat(rows.get(0).getDescription()).isEqualTo("Activity 1");
     }
 
     @Test
     void generateStudentWarReport_noData_returnsEmptyList() {
-        given(warRepository.findByStudentIdAndWeekRange(1L, "02-12-2024", "04-28-2024"))
+        given(warRepository.findByStudentIdAndWeekRange(
+                eq(1L), eq(WEEK_START), eq(LocalDate.of(2024, 4, 28))))
                 .willReturn(List.of());
 
         List<WarReportRow> rows = instructorService
-                .generateStudentWarReport(1L, "02-12-2024", "04-28-2024");
+                .generateStudentWarReport(1L, WEEK_START_STR, WEEK_END_STR);
 
         assertThat(rows).isEmpty();
     }

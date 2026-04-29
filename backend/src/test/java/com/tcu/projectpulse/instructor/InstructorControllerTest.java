@@ -161,7 +161,6 @@ class InstructorControllerTest {
     // UC-30: Register via valid invite token
     @Test
     void registerInstructor_validToken_returns200() {
-        // First create a valid token in the DB
         InvitationToken token = new InvitationToken("test-token-abc", "newteacher@tcu.edu");
         invitationTokenRepository.save(token);
 
@@ -204,11 +203,11 @@ class InstructorControllerTest {
         assertThat((List<?>) response.getBody().get("data")).isEmpty();
     }
 
-    // UC-32: WAR report for team — empty since no data in test DB
+    // UC-32: WAR report for team — fixed: activeWeek must be MM-dd-yyyy only
     @Test
     void getWarReportForTeam_noData_returnsEmptyList() {
         ResponseEntity<Map> response = http.get()
-                .uri("/api/instructors/reports/war/team/1?activeWeek=02-12-2024 to 02-18-2024")
+                .uri("/api/instructors/reports/war/team/1?activeWeek=02-12-2024")
                 .retrieve().toEntity(Map.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);

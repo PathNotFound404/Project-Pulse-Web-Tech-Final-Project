@@ -1,40 +1,43 @@
 package com.tcu.projectpulse.instructor.dto;
 
-// UC-32 & UC-34: One row in a WAR report
 public class WarReportRow {
 
     private String studentName;
-    private String week;            // used in UC-34 (per-week breakdown)
+    private String lastName;          // used for sorting by last name (spec requirement)
+    private String weekStart;
+    private String weekEnd;
     private String activityCategory;
-    private String plannedActivity;
     private String description;
-    private Double plannedHours;
-    private Double actualHours;
+    private double plannedHours;
+    private double actualHours;
     private String status;
-    private boolean submittedWar;   // false = did not turn in WAR that week
+    private boolean submittedWar;
 
     public WarReportRow() {}
 
     public String getStudentName() { return studentName; }
     public void setStudentName(String studentName) { this.studentName = studentName; }
 
-    public String getWeek() { return week; }
-    public void setWeek(String week) { this.week = week; }
+    public String getLastName() { return lastName; }
+    public void setLastName(String lastName) { this.lastName = lastName; }
+
+    public String getWeekStart() { return weekStart; }
+    public void setWeekStart(String weekStart) { this.weekStart = weekStart; }
+
+    public String getWeekEnd() { return weekEnd; }
+    public void setWeekEnd(String weekEnd) { this.weekEnd = weekEnd; }
 
     public String getActivityCategory() { return activityCategory; }
     public void setActivityCategory(String activityCategory) { this.activityCategory = activityCategory; }
 
-    public String getPlannedActivity() { return plannedActivity; }
-    public void setPlannedActivity(String plannedActivity) { this.plannedActivity = plannedActivity; }
-
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
 
-    public Double getPlannedHours() { return plannedHours; }
-    public void setPlannedHours(Double plannedHours) { this.plannedHours = plannedHours; }
+    public double getPlannedHours() { return plannedHours; }
+    public void setPlannedHours(double plannedHours) { this.plannedHours = plannedHours; }
 
-    public Double getActualHours() { return actualHours; }
-    public void setActualHours(Double actualHours) { this.actualHours = actualHours; }
+    public double getActualHours() { return actualHours; }
+    public void setActualHours(double actualHours) { this.actualHours = actualHours; }
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }

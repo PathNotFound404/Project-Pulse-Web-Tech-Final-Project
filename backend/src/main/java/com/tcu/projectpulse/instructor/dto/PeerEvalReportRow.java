@@ -2,20 +2,23 @@ package com.tcu.projectpulse.instructor.dto;
 
 import java.util.List;
 
-// UC-31 & UC-33: Peer Evaluation Report row (one row per student)
 public class PeerEvalReportRow {
 
     private String studentName;
-    private String week;            // used in UC-33 (per-week breakdown)
-    private Double averageGrade;        // e.g. 54.0 out of 60
-    private Double maxGrade;            // e.g. 60.0
+    private String lastName;          // used for sorting by last name (spec requirement)
+    private String week;              // used in UC-33 per-week breakdown
+    private Double averageGrade;
+    private Double maxGrade;
     private List<String> publicComments;
-    private boolean submittedEval;      // false = did not turn in peer eval that week
+    private boolean submittedEval;
 
     public PeerEvalReportRow() {}
 
     public String getStudentName() { return studentName; }
     public void setStudentName(String studentName) { this.studentName = studentName; }
+
+    public String getLastName() { return lastName; }
+    public void setLastName(String lastName) { this.lastName = lastName; }
 
     public String getWeek() { return week; }
     public void setWeek(String week) { this.week = week; }
