@@ -39,6 +39,8 @@ public class InstructorService {
     @Value("${app.frontend-base-url}")
     private String frontendBaseUrl;
 
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
     public InstructorService(InstructorRepository instructorRepository,
                              InvitationTokenRepository invitationTokenRepository,
                              PeerEvaluationRepository peerEvaluationRepository,
