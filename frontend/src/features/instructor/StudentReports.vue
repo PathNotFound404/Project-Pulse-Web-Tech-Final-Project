@@ -84,7 +84,7 @@
 </template>
 
 <script>
-import { getStudentPeerEvalReport, getStudentWarReport } from './instructorService'
+import { getStudentPeerEvalReport, getStudentWarReport } from './InstructorService'
 
 export default {
   name: 'StudentReports',
