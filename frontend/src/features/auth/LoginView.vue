@@ -13,6 +13,24 @@ async function handleLogin() {
   errorMessage.value = ''
   loading.value = true
 
+  // First try instructor login
+  try {
+    const { data } = await api.post('/api/auth/login/instructor', {
+      email: form.value.email,
+      password: form.value.password,
+    })
+
+    if (data.flag) {
+      localStorage.setItem('instructorId', data.data.id)
+      localStorage.setItem('instructorName', data.data.firstName + ' ' + data.data.lastName)
+      router.push('/instructor/reports/peer-eval/section')
+      return
+    }
+  } catch (instructorErr) {
+    // Not an instructor — try student login below
+  }
+
+  // Fall back to student login
   try {
     const { data } = await api.post('/api/auth/login', {
       email: form.value.email,

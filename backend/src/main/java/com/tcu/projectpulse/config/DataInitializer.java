@@ -2,7 +2,9 @@ package com.tcu.projectpulse.config;
 
 import com.tcu.projectpulse.instructor.domain.Instructor;
 import com.tcu.projectpulse.instructor.domain.InstructorStatus;
+import com.tcu.projectpulse.instructor.domain.InvitationToken;
 import com.tcu.projectpulse.instructor.repository.InstructorRepository;
+import com.tcu.projectpulse.instructor.repository.InvitationTokenRepository;
 import com.tcu.projectpulse.peerevaluation.domain.PeerEvaluation;
 import com.tcu.projectpulse.section.domain.Section;
 import com.tcu.projectpulse.section.repository.SectionRepository;
@@ -38,15 +40,18 @@ public class DataInitializer implements ApplicationRunner {
     private final TeamRepository teamRepository;
     private final StudentRepository studentRepository;
     private final InstructorRepository instructorRepository;
+    private final InvitationTokenRepository invitationTokenRepository;
 
     public DataInitializer(SectionRepository sectionRepository,
                            TeamRepository teamRepository,
                            StudentRepository studentRepository,
-                           InstructorRepository instructorRepository) {
+                           InstructorRepository instructorRepository,
+                           InvitationTokenRepository invitationTokenRepository) {
         this.sectionRepository = sectionRepository;
         this.teamRepository = teamRepository;
         this.studentRepository = studentRepository;
         this.instructorRepository = instructorRepository;
+        this.invitationTokenRepository = invitationTokenRepository;
     }
 
     @Override
@@ -111,11 +116,17 @@ public class DataInitializer implements ApplicationRunner {
         teamDelta.setInstructors(new ArrayList<>());
         teamRepository.save(teamDelta);
 
+        // --- Invitation Token for UC-30 testing ---
+        InvitationToken testToken = new InvitationToken("test-token-123", "eduarda@tcu.edu");
+        testToken.setUsed(false);
+        invitationTokenRepository.save(testToken);
+
         System.out.println("=== DataInitializer: seed data loaded ===");
-        System.out.println("Sections : 2024-2025 (id=" + section2425.getId() + "), 2023-2024 (id=" + section2324.getId() + ")");
-        System.out.println("Instructors: Smith(ACTIVE), Johnson(ACTIVE), Lee(ACTIVE), Brown(DEACTIVATED)");
-        System.out.println("Teams     : Alpha, Beta, Gamma, Delta");
-        System.out.println("Students  : Alice, Bob, Carol, David, Eve, Frank (2024-2025) | Grace, Henry (2023-2024)");
+        System.out.println("Sections    : 2024-2025 (id=" + section2425.getId() + "), 2023-2024 (id=" + section2324.getId() + ")");
+        System.out.println("Instructors : Smith(ACTIVE), Johnson(ACTIVE), Lee(ACTIVE), Brown(DEACTIVATED)");
+        System.out.println("Teams       : Alpha, Beta, Gamma, Delta");
+        System.out.println("Students    : Alice, Bob, Carol, David, Eve, Frank (2024-2025) | Grace, Henry (2023-2024)");
+        System.out.println("Invite token: test-token-123  →  eduarda@tcu.edu");
         System.out.println("=========================================");
     }
 
@@ -129,7 +140,7 @@ public class DataInitializer implements ApplicationRunner {
         i.setLastName(lastName);
         i.setEmail(email);
         i.setStatus(status);
-        i.setPasswordHash(SEED_PASSWORD_HASH);
+        i.setPassword(SEED_PASSWORD_HASH);
         i.setTeams(new ArrayList<>());
         return i;
     }

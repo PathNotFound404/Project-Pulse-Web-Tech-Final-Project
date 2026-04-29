@@ -7,7 +7,10 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
+import java.util.Optional;
+
 @Repository
 public interface InstructorRepository extends JpaRepository<Instructor, Long>, JpaSpecificationExecutor<Instructor> {
+
     Optional<Instructor> findByEmail(String email);
 }

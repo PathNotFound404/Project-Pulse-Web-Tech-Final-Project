@@ -13,6 +13,7 @@ import com.tcu.projectpulse.team.domain.Team;
 import com.tcu.projectpulse.student.domain.Student;
 import com.tcu.projectpulse.war.domain.Activity;
 import com.tcu.projectpulse.war.domain.War;
+import com.tcu.projectpulse.team.repository.TeamRepository;
 import com.tcu.projectpulse.war.repository.WarRepository;
 import org.springframework.beans.factory.annotation.Value;
 
@@ -35,6 +36,7 @@ public class InstructorService {
     private final InvitationTokenRepository invitationTokenRepository;
     private final PeerEvaluationRepository peerEvaluationRepository;
     private final WarRepository warRepository;
+    private final TeamRepository teamRepository;
 
     @Value("${app.frontend-base-url}")
     private String frontendBaseUrl;
@@ -44,11 +46,13 @@ public class InstructorService {
     public InstructorService(InstructorRepository instructorRepository,
                              InvitationTokenRepository invitationTokenRepository,
                              PeerEvaluationRepository peerEvaluationRepository,
-                             WarRepository warRepository) {
+                             WarRepository warRepository,
+                             TeamRepository teamRepository) {
         this.instructorRepository = instructorRepository;
         this.invitationTokenRepository = invitationTokenRepository;
         this.peerEvaluationRepository = peerEvaluationRepository;
         this.warRepository = warRepository;
+        this.teamRepository = teamRepository;
     }
 
     // -------------------------------------------------------
@@ -121,7 +125,7 @@ public class InstructorService {
 
         Instructor instructor = instructorRepository.findByEmail(email.trim())
                 .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
-        if (!passwordEncoder.matches(password, instructor.getPasswordHash()))
+        if (!passwordEncoder.matches(password, instructor.getPassword()))
             throw new IllegalArgumentException("Invalid email or password");
 
         return instructor.getId();
@@ -148,9 +152,10 @@ public class InstructorService {
         Instructor instructor = new Instructor();
         instructor.setFirstName(request.getFirstName());
         instructor.setMiddleInitial(request.getMiddleInitial());
+        instructor.setMiddleInitial(request.getMiddleInitial());
         instructor.setLastName(request.getLastName());
         instructor.setEmail(invitationToken.getEmail());
-        instructor.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        instructor.setPassword(passwordEncoder.encode(request.getPassword()));
         instructor.setStatus(InstructorStatus.ACTIVE);
 
         Instructor saved = instructorRepository.save(instructor);
@@ -162,6 +167,7 @@ public class InstructorService {
 
     // UC-31: Generate peer eval report for entire section for a given week
     // Algorithm: for each student, average the total scores from all evaluators
+    // UC-31: Peer eval report for entire section for a given week.
     @Transactional(readOnly = true)
     public List<PeerEvalReportRow> generateSectionPeerEvalReport(Long sectionId, String activeWeek) {
         List<PeerEvaluation> evals = peerEvaluationRepository.findBySectionIdAndActiveWeek(sectionId, activeWeek);
@@ -170,6 +176,7 @@ public class InstructorService {
                 .collect(Collectors.groupingBy(pe -> pe.getStudent().getId()));
 
         List<PeerEvalReportRow> rows = new ArrayList<>();
+
         for (Map.Entry<Long, List<PeerEvaluation>> entry : byStudent.entrySet()) {
             List<PeerEvaluation> studentEvals = entry.getValue();
             PeerEvaluation first = studentEvals.get(0);
@@ -192,15 +199,38 @@ public class InstructorService {
             rows.add(row);
         }
 
-        rows.sort(Comparator.comparing(PeerEvalReportRow::getStudentName));
+        Set<Long> submittedIds = byStudent.keySet();
+        if (!evals.isEmpty()) {
+            Set<Student> sectionStudents = evals.stream()
+                    .flatMap(pe -> pe.getStudent().getTeams().stream())
+                    .flatMap(team -> team.getStudents().stream())
+                    .collect(Collectors.toSet());
+
+            for (Student s : sectionStudents) {
+                if (!submittedIds.contains(s.getId())) {
+                    PeerEvalReportRow row = new PeerEvalReportRow();
+                    row.setStudentName(s.getFirstName() + " " + s.getLastName());
+                    row.setLastName(s.getLastName());
+                    row.setSubmittedEval(false);
+                    row.setPublicComments(new ArrayList<>());
+                    rows.add(row);
+                }
+            }
+        }
+
+        rows.sort(Comparator.comparing(PeerEvalReportRow::getLastName));
         return rows;
     }
 
-    // UC-32: Generate WAR report for a team for a given week
+    // UC-32: WAR report for a team for a given week.
     @Transactional(readOnly = true)
     public List<WarReportRow> generateTeamWarReport(Long teamId, String activeWeek) {
         LocalDate weekStart = LocalDate.parse(activeWeek, WEEK_FMT);
         List<War> wars = warRepository.findByTeamIdAndWeekStart(teamId, weekStart);
+
+        Set<Long> submittedIds = wars.stream()
+                .map(w -> w.getStudent().getId())
+                .collect(Collectors.toSet());
 
         List<WarReportRow> rows = new ArrayList<>();
         for (War war : wars) {
@@ -223,6 +253,21 @@ public class InstructorService {
             }
         }
 
+        Team team = teamRepository.findById(teamId).orElse(null);
+        if (team != null) {
+            for (Student s : team.getStudents()) {
+                if (!submittedIds.contains(s.getId())) {
+                    WarReportRow row = new WarReportRow();
+                    row.setStudentName(s.getFirstName() + " " + s.getLastName());
+                    row.setLastName(s.getLastName());
+                    row.setWeekStart(activeWeek);
+                    row.setSubmittedWar(false);
+                    rows.add(row);
+                }
+            }
+        }
+
+        rows.sort(Comparator.comparing(WarReportRow::getLastName));
         rows.sort(Comparator.comparing(WarReportRow::getStudentName));
         return rows;
     }
