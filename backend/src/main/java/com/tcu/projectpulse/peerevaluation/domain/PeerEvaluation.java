@@ -26,27 +26,21 @@ public class PeerEvaluation {
     private String activeWeek;
 
     // Individual rubric criterion scores (integers per UC-28)
-    // Criterion 1: Quality of work (1-10)
     @Column
     private Integer qualityOfWork;
 
-    // Criterion 2: Productivity (1-10)
     @Column
     private Integer productivity;
 
-    // Criterion 3: Initiative (1-10)
     @Column
     private Integer initiative;
 
-    // Criterion 4: Courtesy (1-10)
     @Column
     private Integer courtesy;
 
-    // Criterion 5: Open-mindedness (1-10)
     @Column
     private Integer openMindedness;
 
-    // Criterion 6: Engagement in meetings (1-10)
     @Column
     private Integer engagementInMeetings;
 
@@ -97,7 +91,6 @@ public class PeerEvaluation {
     public void setPrivateComments(String privateComments) { this.privateComments = privateComments; }
 
     // Helper: compute total score for this evaluation (sum of all criteria)
-    // Used in UC-31 grade algorithm: average of total scores across evaluators
     public int getTotalScore() {
         int total = 0;
         if (qualityOfWork != null) total += qualityOfWork;

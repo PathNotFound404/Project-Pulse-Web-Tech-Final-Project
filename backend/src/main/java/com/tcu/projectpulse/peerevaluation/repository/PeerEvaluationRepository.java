@@ -12,7 +12,6 @@ import java.util.List;
 public interface PeerEvaluationRepository extends JpaRepository<PeerEvaluation, Long> {
 
     // UC-31: Get all peer evals for a given week
-    // Note: sectionId filtering done in service layer since Student->team relationship unknown
     @Query("SELECT pe FROM PeerEvaluation pe WHERE pe.activeWeek = :activeWeek")
     List<PeerEvaluation> findBySectionIdAndActiveWeek(@Param("sectionId") Long sectionId,
                                                        @Param("activeWeek") String activeWeek);
