@@ -1,7 +1,6 @@
 package com.tcu.projectpulse.student.domain;
 
 import jakarta.persistence.*;
-
 import java.time.LocalDateTime;
 
 @Entity

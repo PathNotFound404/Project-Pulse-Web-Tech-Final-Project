@@ -28,8 +28,8 @@ public class StudentService {
     private final StudentInvitationTokenRepository tokenRepository;
     private final BCryptPasswordEncoder passwordEncoder;
 
-    @Value("${server.port:8080}")
-    private int serverPort;
+    @Value("${app.frontend-base-url}")
+    private String frontendBaseUrl;
 
     public StudentService(StudentRepository studentRepository,
                           TeamRepository teamRepository,
@@ -88,9 +88,8 @@ public class StudentService {
         student.getTeams().remove(team);
     }
 
-    // UC-18 equivalent: generate student invite links
-    public List<StudentInviteLinkDto> generateInviteLinks(List<String> emails) {
-        List<StudentInviteLinkDto> links = new ArrayList<>();
+    public List<InviteLinkDto> generateInviteLinks(List<String> emails) {
+        List<InviteLinkDto> links = new ArrayList<>();
         for (String email : emails) {
             String trimmed = email.trim();
             if (trimmed.isBlank()) continue;
@@ -98,8 +97,8 @@ public class StudentService {
             String token = UUID.randomUUID().toString();
             tokenRepository.save(new StudentInvitationToken(token, trimmed));
 
-            String link = "http://localhost:" + serverPort + "/api/students/register?token=" + token;
-            links.add(new StudentInviteLinkDto(trimmed, link));
+            String link = frontendBaseUrl + "/register?token=" + token;
+            links.add(new InviteLinkDto(trimmed, link));
         }
         return links;
     }

@@ -19,6 +19,12 @@ public class Team {
     @Column(nullable = false)
     private String name;
 
+    @Column
+    private String description;
+
+    @Column
+    private String websiteUrl;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "section_id")
     private Section section;
@@ -46,6 +52,12 @@ public class Team {
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
+
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+
+    public String getWebsiteUrl() { return websiteUrl; }
+    public void setWebsiteUrl(String websiteUrl) { this.websiteUrl = websiteUrl; }
 
     public Section getSection() { return section; }
     public void setSection(Section section) { this.section = section; }
