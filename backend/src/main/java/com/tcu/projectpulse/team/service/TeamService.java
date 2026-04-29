@@ -3,6 +3,8 @@ package com.tcu.projectpulse.team.service;
 import com.tcu.projectpulse.common.exception.ObjectNotFoundException;
 import com.tcu.projectpulse.instructor.domain.Instructor;
 import com.tcu.projectpulse.instructor.repository.InstructorRepository;
+import com.tcu.projectpulse.section.domain.Section;
+import com.tcu.projectpulse.section.repository.SectionRepository;
 import com.tcu.projectpulse.team.domain.Team;
 import com.tcu.projectpulse.team.dto.TeamRequest;
 import com.tcu.projectpulse.team.dto.TeamSummaryDto;
@@ -19,12 +21,15 @@ public class TeamService {
     private final TeamRepository teamRepository;
     private final InstructorRepository instructorRepository;
     private final com.tcu.projectpulse.student.repository.StudentRepository studentRepository;
+    private final SectionRepository sectionRepository;
 
     public TeamService(TeamRepository teamRepository, InstructorRepository instructorRepository,
-                   com.tcu.projectpulse.student.repository.StudentRepository studentRepository) {
+                   com.tcu.projectpulse.student.repository.StudentRepository studentRepository,
+                   SectionRepository sectionRepository) {
         this.teamRepository = teamRepository;
         this.instructorRepository = instructorRepository;
         this.studentRepository = studentRepository;
+        this.sectionRepository = sectionRepository;
     }
 
     public void deleteTeam(Long teamId) {
@@ -111,6 +116,11 @@ public class TeamService {
         team.setName(request.name());
         team.setDescription(request.description());
         team.setWebsiteUrl(request.websiteUrl());
+        if (request.sectionId() != null) {
+            Section section = sectionRepository.findById(request.sectionId())
+                    .orElseThrow(() -> new ObjectNotFoundException("Section", request.sectionId()));
+            team.setSection(section);
+        }
         return toSummaryDto(teamRepository.save(team));
     }
 
@@ -120,6 +130,13 @@ public class TeamService {
         if (request.name() != null) team.setName(request.name());
         if (request.description() != null) team.setDescription(request.description());
         if (request.websiteUrl() != null) team.setWebsiteUrl(request.websiteUrl());
+        if (request.sectionId() != null) {
+            Section section = sectionRepository.findById(request.sectionId())
+                    .orElseThrow(() -> new ObjectNotFoundException("Section", request.sectionId()));
+            team.setSection(section);
+        } else {
+            team.setSection(null);
+        }
         return toSummaryDto(teamRepository.save(team));
     }
 

@@ -2,44 +2,34 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../../services/api.js'
+import { useAuthStore } from '../../stores/auth.js'
 
 const router = useRouter()
+const auth = useAuthStore()
 
 const form = ref({ email: '', password: '' })
 const errorMessage = ref('')
 const loading = ref(false)
 
+const ROLE_HOME = {
+  student: '/home',
+  instructor: '/instructor/home',
+  admin: '/admin',
+}
+
 async function handleLogin() {
   errorMessage.value = ''
   loading.value = true
-
-  // First try instructor login
   try {
-    const { data } = await api.post('/api/auth/login/instructor', {
-      email: form.value.email,
-      password: form.value.password,
-    })
-
+    const { data } = await api.post('/api/auth/login', form.value)
     if (data.flag) {
-      localStorage.setItem('instructorId', data.data.id)
-      localStorage.setItem('instructorName', data.data.firstName + ' ' + data.data.lastName)
-      router.push('/instructor/reports/peer-eval/section')
-      return
-    }
-  } catch (instructorErr) {
-    // Not an instructor — try student login below
-  }
-
-  // Fall back to student login
-  try {
-    const { data } = await api.post('/api/auth/login', {
-      email: form.value.email,
-      password: form.value.password,
-    })
-
-    if (data.flag) {
-      localStorage.setItem('studentId', data.data.id)
-      router.push('/home')
+      auth.login({
+        id: data.data.id,
+        role: data.data.role,
+        firstName: data.data.firstName,
+        lastName: data.data.lastName,
+      })
+      router.push(ROLE_HOME[data.data.role?.toLowerCase()] ?? '/home')
     } else {
       errorMessage.value = data.message || 'Invalid email or password'
     }
@@ -53,7 +43,8 @@ async function handleLogin() {
 
 <template>
   <div class="login-page">
-    <h1>Log In</h1>
+    <h1>Project Pulse</h1>
+    <h2>Log In</h2>
 
     <form @submit.prevent="handleLogin">
       <div class="field">
@@ -74,7 +65,7 @@ async function handleLogin() {
     </form>
 
     <p class="register-link">
-      New user? <a href="/register">Create an account</a>
+      New student? <RouterLink to="/register">Create an account</RouterLink>
     </p>
   </div>
 </template>
@@ -82,8 +73,24 @@ async function handleLogin() {
 <style scoped>
 .login-page {
   max-width: 400px;
-  margin: 60px auto;
-  padding: 24px;
+  margin: 80px auto;
+  padding: 32px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: white;
+}
+
+h1 {
+  font-size: 20px;
+  color: #2c3e50;
+  margin: 0 0 4px;
+}
+
+h2 {
+  font-size: 15px;
+  font-weight: 400;
+  color: #666;
+  margin: 0 0 24px;
 }
 
 .field {
@@ -95,6 +102,7 @@ async function handleLogin() {
 label {
   margin-bottom: 4px;
   font-weight: 500;
+  font-size: 14px;
 }
 
 input {
@@ -130,5 +138,9 @@ button:disabled {
   margin-top: 16px;
   font-size: 14px;
   text-align: center;
+}
+
+.register-link a {
+  color: #2c3e50;
 }
 </style>

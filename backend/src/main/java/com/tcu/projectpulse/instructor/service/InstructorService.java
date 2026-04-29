@@ -183,6 +183,7 @@ public class InstructorService {
 
             PeerEvalReportRow row = new PeerEvalReportRow();
             row.setStudentName(first.getStudent().getFirstName() + " " + first.getStudent().getLastName());
+            row.setLastName(first.getStudent().getLastName());
 
             double avgGrade = studentEvals.stream()
                     .mapToInt(PeerEvaluation::getTotalScore)
@@ -277,11 +278,16 @@ public class InstructorService {
     public List<PeerEvalReportRow> generateStudentPeerEvalReport(Long studentId,
                                                                   String startWeek,
                                                                   String endWeek) {
+        LocalDate startDate = LocalDate.parse(startWeek, WEEK_FMT);
+        LocalDate endDate = LocalDate.parse(endWeek, WEEK_FMT);
         List<PeerEvaluation> evals = peerEvaluationRepository
-                .findByStudentIdAndWeekRange(studentId, startWeek, endWeek);
+                .findByStudentIdAndWeekRange(studentId, startDate, endDate);
 
+        // Group by activeWeek string; fall back to weekStart formatted if activeWeek is null
         Map<String, List<PeerEvaluation>> byWeek = evals.stream()
-                .collect(Collectors.groupingBy(PeerEvaluation::getActiveWeek));
+                .collect(Collectors.groupingBy(pe ->
+                        pe.getActiveWeek() != null ? pe.getActiveWeek()
+                                : pe.getWeekStart().format(WEEK_FMT)));
 
         List<PeerEvalReportRow> rows = new ArrayList<>();
         for (Map.Entry<String, List<PeerEvaluation>> entry : byWeek.entrySet()) {
@@ -302,6 +308,30 @@ public class InstructorService {
                     .map(PeerEvaluation::getPublicComments)
                     .collect(Collectors.toList());
             row.setPublicComments(publicComments);
+
+            List<PeerEvalDetail> details = weekEvals.stream().map(pe -> {
+                PeerEvalDetail d = new PeerEvalDetail();
+                if (pe.getEvaluator() != null) {
+                    d.setEvaluatorName(pe.getEvaluator().getFirstName() + " " + pe.getEvaluator().getLastName());
+                } else {
+                    d.setEvaluatorName("Anonymous");
+                }
+                d.setCourtesy(pe.getCourtesy());
+                d.setEngagementInMeetings(pe.getEngagementInMeetings());
+                d.setInitiative(pe.getInitiative());
+                d.setOpenMindedness(pe.getOpenMindedness());
+                d.setProductivity(pe.getProductivity());
+                d.setQualityOfWork(pe.getQualityOfWork());
+                d.setTotalScore(pe.getTotalScore());
+                // Combine both field variants (student submission vs seed data)
+                String pub = pe.getPublicComments() != null ? pe.getPublicComments() : pe.getPublicComment();
+                String priv = pe.getPrivateComments() != null ? pe.getPrivateComments() : pe.getPrivateComment();
+                d.setPublicComments(pub);
+                d.setPrivateComments(priv);
+                return d;
+            }).collect(Collectors.toList());
+            row.setEvaluations(details);
+
             rows.add(row);
         }
 

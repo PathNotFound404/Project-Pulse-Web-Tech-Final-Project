@@ -1,11 +1,14 @@
 package com.tcu.projectpulse.config;
 
+import com.tcu.projectpulse.admin.domain.Admin;
+import com.tcu.projectpulse.admin.repository.AdminRepository;
 import com.tcu.projectpulse.instructor.domain.Instructor;
 import com.tcu.projectpulse.instructor.domain.InstructorStatus;
 import com.tcu.projectpulse.instructor.domain.InvitationToken;
 import com.tcu.projectpulse.instructor.repository.InstructorRepository;
 import com.tcu.projectpulse.instructor.repository.InvitationTokenRepository;
 import com.tcu.projectpulse.peerevaluation.domain.PeerEvaluation;
+import com.tcu.projectpulse.section.domain.ActiveWeek;
 import com.tcu.projectpulse.section.domain.Section;
 import com.tcu.projectpulse.section.repository.SectionRepository;
 import com.tcu.projectpulse.student.domain.Student;
@@ -23,6 +26,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -41,26 +45,46 @@ public class DataInitializer implements ApplicationRunner {
     private final StudentRepository studentRepository;
     private final InstructorRepository instructorRepository;
     private final InvitationTokenRepository invitationTokenRepository;
+    private final AdminRepository adminRepository;
 
     public DataInitializer(SectionRepository sectionRepository,
                            TeamRepository teamRepository,
                            StudentRepository studentRepository,
                            InstructorRepository instructorRepository,
-                           InvitationTokenRepository invitationTokenRepository) {
+                           InvitationTokenRepository invitationTokenRepository,
+                           AdminRepository adminRepository) {
         this.sectionRepository = sectionRepository;
         this.teamRepository = teamRepository;
         this.studentRepository = studentRepository;
         this.instructorRepository = instructorRepository;
         this.invitationTokenRepository = invitationTokenRepository;
+        this.adminRepository = adminRepository;
     }
 
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
 
+        // Use the current Monday as an anchor so seed data is always "this semester"
+        LocalDate thisMonday = LocalDate.now().with(DayOfWeek.MONDAY);
+
+        // --- Admin ---
+        adminRepository.save(admin("Admin", "User", "admin@tcu.edu"));
+
         // --- Sections ---
-        Section section2425 = sectionRepository.save(section("2024-2025"));
-        Section section2324 = sectionRepository.save(section("2023-2024"));
+        // 2024-2025: spans ±8 weeks from today so it always covers the current week
+        Section section2425 = new Section("2024-2025");
+        section2425.setStartDate(thisMonday.minusWeeks(8));
+        section2425.setEndDate(thisMonday.plusWeeks(8));
+        section2425 = sectionRepository.save(section2425);
+        addActiveWeeks(section2425);
+        sectionRepository.save(section2425);
+
+        // 2023-2024: historical section
+        Section section2324 = new Section("2023-2024");
+        section2324.setStartDate(LocalDate.of(2024, 1, 8));
+        section2324.setEndDate(LocalDate.of(2024, 4, 29));
+        section2324 = sectionRepository.save(section2324);
 
         // --- Instructors ---
         Instructor drSmith   = instructorRepository.save(instructor("Alice",  "Smith",   "a.smith@tcu.edu",   InstructorStatus.ACTIVE));
@@ -80,9 +104,9 @@ public class DataInitializer implements ApplicationRunner {
         Student grace = studentRepository.save(student("Grace", "Green",  "g.green@tcu.edu",  section2324));
         Student henry = studentRepository.save(student("Henry", "Harris", "h.harris@tcu.edu", section2324));
 
-        // Add WARs and PeerEvaluations to Alice so UC-16 / UC-32 / UC-33 / UC-34 show data
-        addWars(alice, 3);
-        addPeerEvaluations(alice, bob, 2);
+        // Seed WARs and PeerEvaluations using recent weeks so reports show data immediately
+        addWars(alice, 3, thisMonday.minusWeeks(3));
+        addPeerEvaluations(alice, bob, 2, thisMonday.minusWeeks(2));
         studentRepository.save(alice);
 
         // --- Teams (2024-2025) ---
@@ -122,16 +146,36 @@ public class DataInitializer implements ApplicationRunner {
         invitationTokenRepository.save(testToken);
 
         System.out.println("=== DataInitializer: seed data loaded ===");
-        System.out.println("Sections    : 2024-2025 (id=" + section2425.getId() + "), 2023-2024 (id=" + section2324.getId() + ")");
-        System.out.println("Instructors : Smith(ACTIVE), Johnson(ACTIVE), Lee(ACTIVE), Brown(DEACTIVATED)");
-        System.out.println("Teams       : Alpha, Beta, Gamma, Delta");
-        System.out.println("Students    : Alice, Bob, Carol, David, Eve, Frank (2024-2025) | Grace, Henry (2023-2024)");
+        System.out.println("Admin       : admin@tcu.edu / password123");
+        System.out.println("Instructors : a.smith@tcu.edu / r.johnson@tcu.edu / l.lee@tcu.edu (all password123)");
+        System.out.println("Students    : a.adams@tcu.edu … f.foster@tcu.edu (all password123)");
+        System.out.println("Section 2024-2025 has active weeks from " + section2425.getStartDate() + " to " + section2425.getEndDate());
+        System.out.println("WAR data    : Team Alpha / Alice Adams — weeks " + thisMonday.minusWeeks(3) + " through " + thisMonday.minusWeeks(1));
+        System.out.println("Peer eval   : Alice Adams (section 2024-2025) — weeks " + thisMonday.minusWeeks(2).format(WEEK_FMT) + " and " + thisMonday.minusWeeks(1).format(WEEK_FMT));
         System.out.println("Invite token: test-token-123  →  eduarda@tcu.edu");
         System.out.println("=========================================");
     }
 
-    private Section section(String name) {
-        return new Section(name);
+    private void addActiveWeeks(Section section) {
+        LocalDate cursor = section.getStartDate();
+        while (!cursor.isAfter(section.getEndDate())) {
+            ActiveWeek aw = new ActiveWeek();
+            aw.setStartDate(cursor);
+            aw.setEndDate(cursor.plusDays(6));
+            aw.setIsActive(true);
+            aw.setSection(section);
+            section.getActiveWeeks().add(aw);
+            cursor = cursor.plusWeeks(1);
+        }
+    }
+
+    private Admin admin(String firstName, String lastName, String email) {
+        Admin a = new Admin();
+        a.setFirstName(firstName);
+        a.setLastName(lastName);
+        a.setEmail(email);
+        a.setPasswordHash(SEED_PASSWORD_HASH);
+        return a;
     }
 
     private Instructor instructor(String firstName, String lastName, String email, InstructorStatus status) {
@@ -155,12 +199,10 @@ public class DataInitializer implements ApplicationRunner {
         return s;
     }
 
-    private void addWars(Student student, int count) {
+    private void addWars(Student student, int count, LocalDate firstWeekStart) {
         List<War> wars = new ArrayList<>();
-        LocalDate monday = LocalDate.of(2025, 1, 6);
-
         for (int i = 0; i < count; i++) {
-            LocalDate weekStart = monday.plusWeeks(i);
+            LocalDate weekStart = firstWeekStart.plusWeeks(i);
             LocalDate weekEnd   = weekStart.plusDays(6);
 
             War war = new War();
@@ -190,15 +232,17 @@ public class DataInitializer implements ApplicationRunner {
         student.setWars(wars);
     }
 
-    private void addPeerEvaluations(Student student, Student evaluator, int count) {
+    private void addPeerEvaluations(Student student, Student evaluator, int count, LocalDate firstWeekStart) {
         List<PeerEvaluation> evals = new ArrayList<>();
         for (int i = 0; i < count; i++) {
+            LocalDate weekStart = firstWeekStart.plusWeeks(i);
             PeerEvaluation pe = new PeerEvaluation();
             pe.setStudent(student);
             pe.setEvaluator(evaluator);
-            LocalDate peWeekStart = LocalDate.of(2025, 1, 6).plusWeeks(i);
-            LocalDate peWeekEnd = peWeekStart.plusDays(6);
-            pe.setActiveWeek(peWeekStart.format(WEEK_FMT) + " to " + peWeekEnd.format(WEEK_FMT));
+            pe.setWeekStart(weekStart);
+            pe.setWeekEnd(weekStart.plusDays(6));
+            // activeWeek stored as MM-dd-yyyy start date to match what the frontend sends for UC-31
+            pe.setActiveWeek(weekStart.format(WEEK_FMT));
             pe.setCourtesy(4);
             pe.setEngagementInMeetings(4);
             pe.setInitiative(3);

@@ -38,6 +38,13 @@ public class RubricController {
         return Result.success("Rubric created", rubric);
     }
 
+    // UC-1: Update a rubric
+    @PutMapping("/{id}")
+    public Result updateRubric(@PathVariable Long id, @RequestBody RubricRequest request) {
+        RubricDto rubric = rubricService.updateRubric(id, request);
+        return Result.success("Rubric updated", rubric);
+    }
+
     // UC-4: Duplicate and edit rubric for a section
     @PostMapping("/{id}/duplicate")
     public Result duplicateRubric(@PathVariable Long id, @RequestBody RubricRequest request) {
