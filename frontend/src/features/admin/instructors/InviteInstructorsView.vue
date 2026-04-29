@@ -46,7 +46,7 @@ async function handleInvite() {
         <tbody>
           <tr v-for="l in links" :key="l.email">
             <td>{{ l.email }}</td>
-            <td class="link-cell"><a :href="l.link" target="_blank">{{ l.link }}</a></td>
+            <td class="link-cell"><a :href="l.inviteLink" target="_blank">{{ l.inviteLink }}</a></td>
           </tr>
         </tbody>
       </table>
