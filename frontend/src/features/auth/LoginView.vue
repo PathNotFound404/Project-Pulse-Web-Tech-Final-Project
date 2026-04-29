@@ -39,7 +39,7 @@ async function handleLogin() {
 
     if (data.flag) {
       localStorage.setItem('studentId', data.data.id)
-      router.push('/account')
+      router.push('/home')
     } else {
       errorMessage.value = data.message || 'Invalid email or password'
     }
