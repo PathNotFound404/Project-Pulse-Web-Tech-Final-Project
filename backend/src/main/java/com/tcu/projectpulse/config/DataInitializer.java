@@ -129,6 +129,7 @@ public class DataInitializer implements ApplicationRunner {
         i.setLastName(lastName);
         i.setEmail(email);
         i.setStatus(status);
+        i.setPasswordHash(SEED_PASSWORD_HASH);
         i.setTeams(new ArrayList<>());
         return i;
     }
