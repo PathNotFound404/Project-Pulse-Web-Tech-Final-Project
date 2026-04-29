@@ -36,8 +36,8 @@ public class InstructorService {
     private final WarRepository warRepository;
     private final TeamRepository teamRepository;
 
-    @Value("${server.port:8080}")
-    private int serverPort;
+    @Value("${app.frontend-base-url}")
+    private String frontendBaseUrl;
 
     public InstructorService(InstructorRepository instructorRepository,
                              InvitationTokenRepository invitationTokenRepository,
@@ -80,7 +80,7 @@ public class InstructorService {
             String token = UUID.randomUUID().toString();
             InvitationToken invitationToken = new InvitationToken(token, trimmed);
             invitationTokenRepository.save(invitationToken);
-            String link = "http://localhost:" + serverPort + "/api/instructors/register?token=" + token;
+            String link = frontendBaseUrl + "/instructor/register?token=" + token;
             links.add(new InviteLinkDto(trimmed, link));
         }
         return links;
