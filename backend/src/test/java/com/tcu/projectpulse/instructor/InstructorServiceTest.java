@@ -54,8 +54,9 @@ class InstructorServiceTest {
     private Student student;
 
     // Shared date constants — "02-12-2024" is the week_start used across WAR tests
-    private static final LocalDate WEEK_START = LocalDate.of(2024, 2, 12);
-    private static final LocalDate WEEK_END   = LocalDate.of(2024, 2, 18);
+    private static final LocalDate WEEK_START  = LocalDate.of(2024, 2, 12);
+    private static final LocalDate WEEK_END    = LocalDate.of(2024, 2, 18);
+    private static final LocalDate RANGE_END   = LocalDate.of(2024, 4, 28);
     private static final String    WEEK_START_STR = "02-12-2024";
     private static final String    WEEK_END_STR   = "04-28-2024";
 
@@ -364,7 +365,7 @@ class InstructorServiceTest {
         pe.setEngagementInMeetings(9);
         pe.setPublicComments("Excellent!");
 
-        given(peerEvaluationRepository.findByStudentIdAndWeekRange(1L, WEEK_START_STR, WEEK_END_STR))
+        given(peerEvaluationRepository.findByStudentIdAndWeekRange(1L, WEEK_START, RANGE_END))
                 .willReturn(List.of(pe));
 
         List<PeerEvalReportRow> rows = instructorService
@@ -377,7 +378,7 @@ class InstructorServiceTest {
 
     @Test
     void generateStudentPeerEvalReport_noData_returnsEmptyList() {
-        given(peerEvaluationRepository.findByStudentIdAndWeekRange(1L, WEEK_START_STR, WEEK_END_STR))
+        given(peerEvaluationRepository.findByStudentIdAndWeekRange(1L, WEEK_START, RANGE_END))
                 .willReturn(List.of());
 
         List<PeerEvalReportRow> rows = instructorService
