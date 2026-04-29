@@ -9,3 +9,8 @@ export async function submitEvaluations(payload) {
   const { data } = await api.post('/api/peer-evaluations', payload)
   return data
 }
+
+export async function getMyReport(week) {
+  const { data } = await api.get(`/api/peer-evaluations/my-report?week=${week}`)
+  return data
+}

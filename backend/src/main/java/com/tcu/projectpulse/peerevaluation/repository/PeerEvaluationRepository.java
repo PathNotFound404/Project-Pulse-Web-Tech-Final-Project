@@ -15,4 +15,6 @@ public interface PeerEvaluationRepository extends JpaRepository<PeerEvaluation, 
 
     Optional<PeerEvaluation> findByStudentIdAndEvaluateeIdAndWeekStart(
             Long studentId, Long evaluateeId, LocalDate weekStart);
+
+    List<PeerEvaluation> findByEvaluateeIdAndWeekStart(Long evaluateeId, LocalDate weekStart);
 }

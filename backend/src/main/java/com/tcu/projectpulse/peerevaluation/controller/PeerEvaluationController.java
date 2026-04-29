@@ -27,6 +27,14 @@ public class PeerEvaluationController {
         return Result.success(peerEvaluationService.getSheet(studentId, date));
     }
 
+    // UC-29: View own peer evaluation report for a given week
+    @GetMapping("/my-report")
+    Result getMyReport(@RequestParam String week, HttpSession session) {
+        Long studentId = requireAuth(session);
+        LocalDate date = LocalDate.parse(week);
+        return Result.success(peerEvaluationService.getMyReport(studentId, date));
+    }
+
     // UC-28: Submit or update peer evaluations for the week
     @PostMapping
     Result submit(@RequestBody SubmitPeerEvaluationsRequest request, HttpSession session) {
