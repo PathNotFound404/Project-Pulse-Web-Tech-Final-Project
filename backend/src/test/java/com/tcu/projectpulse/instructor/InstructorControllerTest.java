@@ -245,6 +245,7 @@ class InstructorControllerTest {
         i.setLastName(lastName);
         i.setEmail(email);
         i.setStatus(status);
+        i.setPasswordHash("test-hash");
         i.setTeams(new ArrayList<>());
         return i;
     }
