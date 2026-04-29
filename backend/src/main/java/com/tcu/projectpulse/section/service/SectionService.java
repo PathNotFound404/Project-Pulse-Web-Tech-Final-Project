@@ -104,6 +104,17 @@ public class SectionService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<ActiveWeekDto> getActiveWeeks(Long sectionId) {
+        Section section = sectionRepository.findById(sectionId)
+                .orElseThrow(() -> new ObjectNotFoundException("Section", sectionId));
+        return section.getActiveWeeks().stream()
+                .filter(w -> Boolean.TRUE.equals(w.getIsActive()))
+                .sorted(java.util.Comparator.comparing(ActiveWeek::getStartDate))
+                .map(w -> new ActiveWeekDto(w.getId(), w.getStartDate(), w.getEndDate(), w.getIsActive()))
+                .toList();
+    }
+
     public void deleteSection(Long id) {
         sectionRepository.deleteById(id);
     }

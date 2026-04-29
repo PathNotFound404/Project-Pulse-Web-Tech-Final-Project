@@ -11,6 +11,7 @@ public class PeerEvalReportRow {
     private Double maxGrade;
     private List<String> publicComments;
     private boolean submittedEval;
+    private List<PeerEvalDetail> evaluations;
 
     public PeerEvalReportRow() {}
 
@@ -34,4 +35,7 @@ public class PeerEvalReportRow {
 
     public boolean isSubmittedEval() { return submittedEval; }
     public void setSubmittedEval(boolean submittedEval) { this.submittedEval = submittedEval; }
+
+    public List<PeerEvalDetail> getEvaluations() { return evaluations; }
+    public void setEvaluations(List<PeerEvalDetail> evaluations) { this.evaluations = evaluations; }
 }

@@ -1,7 +1,15 @@
 <script setup>
-import { RouterView } from 'vue-router'
+import { computed } from 'vue'
+import { useRoute, RouterView } from 'vue-router'
+import AppLayout from './components/AppLayout.vue'
+
+const route = useRoute()
+const noLayout = computed(() => route.meta.noLayout === true)
 </script>
 
 <template>
-  <RouterView />
+  <AppLayout v-if="!noLayout">
+    <RouterView />
+  </AppLayout>
+  <RouterView v-else />
 </template>

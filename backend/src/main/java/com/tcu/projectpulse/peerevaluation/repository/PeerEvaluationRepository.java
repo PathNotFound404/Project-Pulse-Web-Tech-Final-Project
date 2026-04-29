@@ -21,16 +21,16 @@ public interface PeerEvaluationRepository extends JpaRepository<PeerEvaluation, 
 
     List<PeerEvaluation> findByEvaluateeIdAndWeekStart(Long evaluateeId, LocalDate weekStart);
 
-    // UC-31 (your design - String activeWeek based)
-    @Query("SELECT pe FROM PeerEvaluation pe WHERE pe.activeWeek = :activeWeek")
+    // UC-31: peer evals for all students whose section matches, for a given week start date
+    @Query("SELECT pe FROM PeerEvaluation pe WHERE pe.student.section.id = :sectionId AND pe.activeWeek = :activeWeek")
     List<PeerEvaluation> findBySectionIdAndActiveWeek(@Param("sectionId") Long sectionId,
                                                        @Param("activeWeek") String activeWeek);
 
-    // UC-33 (your design - String activeWeek range)
-    @Query("SELECT pe FROM PeerEvaluation pe WHERE pe.student.id = :studentId AND pe.activeWeek BETWEEN :startWeek AND :endWeek")
+    // UC-33: date range query using LocalDate so comparison is always correct
+    @Query("SELECT pe FROM PeerEvaluation pe WHERE pe.student.id = :studentId AND pe.weekStart BETWEEN :start AND :end")
     List<PeerEvaluation> findByStudentIdAndWeekRange(@Param("studentId") Long studentId,
-                                                      @Param("startWeek") String startWeek,
-                                                      @Param("endWeek") String endWeek);
+                                                      @Param("start") LocalDate start,
+                                                      @Param("end") LocalDate end);
 
     // UC-31: Get all peer evals for a specific student in a given week
     @Query("SELECT pe FROM PeerEvaluation pe WHERE pe.student.id = :studentId AND pe.activeWeek = :activeWeek")

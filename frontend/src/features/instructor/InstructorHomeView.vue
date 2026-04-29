@@ -3,38 +3,33 @@ import { useAuthStore } from '../../stores/auth.js'
 
 const auth = useAuthStore()
 
-const navLinks = [
+const reportLinks = [
   {
-    to: '/war',
-    title: 'Weekly Activity Report',
-    description: 'Submit your planned and actual activities for the current week.',
+    to: '/instructor/reports/peer-eval/section',
+    title: 'Section Peer Eval Report',
+    description: 'Generate a peer evaluation report for an entire senior design section for a given week.',
   },
   {
-    to: '/peer-evaluation',
-    title: 'Peer Evaluation',
-    description: 'Evaluate your teammates for the current active week.',
+    to: '/instructor/reports/war/team',
+    title: 'Team WAR Report',
+    description: 'View all weekly activities submitted by a team for a given week.',
   },
   {
-    to: '/peer-evaluation/report',
-    title: 'My Report',
-    description: 'View your peer evaluation scores and feedback received from teammates.',
-  },
-  {
-    to: '/account',
-    title: 'My Account',
-    description: 'View and update your profile information.',
+    to: '/instructor/reports/student',
+    title: 'Student Reports',
+    description: 'Generate peer evaluation or WAR reports for an individual student over a date range.',
   },
 ]
 </script>
 
 <template>
-  <div class="home">
+  <div class="instructor-home">
     <h1>Welcome, {{ auth.firstName }}</h1>
-    <p class="subtitle">What would you like to do today?</p>
+    <p class="subtitle">Select a report to get started.</p>
 
     <div class="card-grid">
       <RouterLink
-        v-for="link in navLinks"
+        v-for="link in reportLinks"
         :key="link.to"
         :to="link.to"
         class="card"
@@ -47,7 +42,7 @@ const navLinks = [
 </template>
 
 <style scoped>
-.home {
+.instructor-home {
   max-width: 800px;
 }
 

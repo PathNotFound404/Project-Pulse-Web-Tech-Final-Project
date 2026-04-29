@@ -56,6 +56,30 @@ public class RubricService {
         return createRubric(request);
     }
 
+    public RubricDto updateRubric(Long id, RubricRequest request) {
+        Rubric rubric = rubricRepository.findById(id)
+                .orElseThrow(() -> new ObjectNotFoundException("Rubric", id));
+
+        // Only block name collision if the name is changing to one that already belongs to a different rubric
+        if (!rubric.getName().equals(request.name()) && rubricRepository.existsByName(request.name())) {
+            throw new IllegalArgumentException("Rubric with name '" + request.name() + "' already exists.");
+        }
+
+        rubric.setName(request.name());
+        rubric.getCriteria().clear();
+        if (request.criteria() != null) {
+            for (RubricCriterionDto dto : request.criteria()) {
+                RubricCriterion criterion = new RubricCriterion();
+                criterion.setName(dto.name());
+                criterion.setDescription(dto.description());
+                criterion.setMaxScore(dto.maxScore());
+                criterion.setRubric(rubric);
+                rubric.getCriteria().add(criterion);
+            }
+        }
+        return toDto(rubricRepository.save(rubric));
+    }
+
     public void deleteRubric(Long id) {
         rubricRepository.deleteById(id);
     }

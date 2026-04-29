@@ -45,6 +45,13 @@ public class SectionController {
         return Result.success("Section updated", section);
     }
 
+    // UC-6: Get active weeks for a section
+    @GetMapping("/{id}/active-weeks")
+    public Result getActiveWeeks(@PathVariable Long id) {
+        List<ActiveWeekDto> weeks = sectionService.getActiveWeeks(id);
+        return Result.success("Success", weeks);
+    }
+
     // UC-6: Set up active weeks
     @PostMapping("/{id}/active-weeks")
     public Result setupActiveWeeks(@PathVariable Long id, @RequestBody ActiveWeekRequest request) {
