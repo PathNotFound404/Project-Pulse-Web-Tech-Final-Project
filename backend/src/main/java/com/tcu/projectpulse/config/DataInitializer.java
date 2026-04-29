@@ -16,6 +16,8 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +25,9 @@ import java.util.List;
 @Component
 @Profile("!test")
 public class DataInitializer implements ApplicationRunner {
+
+    private static final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+    private static final String SEED_PASSWORD_HASH = encoder.encode("password123");
 
     private final SectionRepository sectionRepository;
     private final TeamRepository teamRepository;
@@ -128,6 +133,7 @@ public class DataInitializer implements ApplicationRunner {
         s.setLastName(lastName);
         s.setEmail(email);
         s.setSection(section);
+        s.setPasswordHash(SEED_PASSWORD_HASH);
         return s;
     }
 
