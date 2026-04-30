@@ -109,9 +109,8 @@ public class DataInitializer implements ApplicationRunner {
         Student grace = studentRepository.save(student("Grace", "Green",  "g.green@tcu.edu",  section2324));
         Student henry = studentRepository.save(student("Henry", "Harris", "h.harris@tcu.edu", section2324));
 
-        // Seed WARs and PeerEvaluations using recent weeks so reports show data immediately
+        // Seed WARs using recent weeks so reports show data immediately
         addWars(alice, 3, thisMonday.minusWeeks(3));
-        addPeerEvaluations(alice, bob, 2, thisMonday.minusWeeks(2));
         studentRepository.save(alice);
 
         // --- Teams (2024-2025) ---
