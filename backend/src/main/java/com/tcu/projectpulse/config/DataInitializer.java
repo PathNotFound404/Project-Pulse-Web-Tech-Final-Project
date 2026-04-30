@@ -65,6 +65,11 @@ public class DataInitializer implements ApplicationRunner {
     @Transactional
     public void run(ApplicationArguments args) {
 
+        if (adminRepository.count() > 0) {
+            System.out.println("=== DataInitializer: seed data already present, skipping ===");
+            return;
+        }
+
         // Use the current Monday as an anchor so seed data is always "this semester"
         LocalDate thisMonday = LocalDate.now().with(DayOfWeek.MONDAY);
 
