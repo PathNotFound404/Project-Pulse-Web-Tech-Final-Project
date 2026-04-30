@@ -50,7 +50,7 @@ public class PeerEvaluationService {
         List<EvaluationEntryResponse> entries = teammates.stream()
                 .map(tm -> {
                     PeerEvaluation pe = existing.stream()
-                            .filter(e -> e.getEvaluatee().getId().equals(tm.getId()))
+                            .filter(e -> e.getEvaluatee() != null && e.getEvaluatee().getId().equals(tm.getId()))
                             .findFirst()
                             .orElse(null);
                     return toEntryResponse(tm, pe);
